@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import re
 
+from tts.number_cn import verbalize_numbers
 from tts.pronunciation_fix import fix_tts_pronunciation
 
 _PRIMARY = re.compile(r"([^。！？!?\n]+[。！？!?\n])")
@@ -10,7 +11,7 @@ _CJK = re.compile(r"[\u4e00-\u9fff]")
 
 _MD_BOLD = re.compile(r"\*\*([^*]+)\*\*")
 _MD_LIST = re.compile(r"^\s*[-*•]\s*", re.MULTILINE)
-_MD_NUM_LIST = re.compile(r"^\s*\d+[\.、]\s*", re.MULTILINE)
+_MD_NUM_LIST = re.compile(r"^\s*\d+[\.、](?!\d)\s*", re.MULTILINE)  # not 3.5
 _MD_HEAD = re.compile(r"^#+\s*", re.MULTILINE)
 
 LETTER_MAP = {
@@ -88,10 +89,11 @@ def sanitize_tts_text(text: str) -> str:
     text = re.sub(r"^小揽[：:]\s*", "", text)
     text = re.sub(r"<\|im_end\|>.*", "", text)
     text = re.sub(r"三[Dd]?打印", "三维打印", text, flags=re.IGNORECASE)
+    # 数字按中文习惯读（十一月、三点五、百分之五十）；要在冒号转逗号之前，否则 13:05 会被拆开
+    text = verbalize_numbers(text)
     # 冒号、分号转逗号停顿，换行转句号
     text = re.sub(r"[：:；;]+", "，", text)
     text = re.sub(r"[\r\n]+", "。", text)
-    # 数字转汉字
     text = text.translate(_DIGIT_MAP)
     # 英文音译转汉字发音
     text = transliterate_en(text)
@@ -469,7 +471,7 @@ class StreamingSentenceSplitter:
                 else:
                     # Sentence is long, search for a comma before curr_max that is >= curr_min
                     best_comma = None
-                    for m in re.finditer(r"[，,；;、：:]+", self._buf[:full_pos]):
+                    for m in re.finditer(r"(?:[，；、：]|[,;:](?=[^\d]))+", self._buf[:full_pos]):
                         if m.start() >= curr_min and m.start() <= curr_max:
                             best_comma = m
                     if best_comma:
@@ -477,7 +479,7 @@ class StreamingSentenceSplitter:
                         cut_end = best_comma.end()
                         is_clause = True
                     else:
-                        for m in re.finditer(r"[，,；;、：:]+", self._buf[:full_pos]):
+                        for m in re.finditer(r"(?:[，；、：]|[,;:](?=[^\d]))+", self._buf[:full_pos]):
                             if m.start() >= 5:
                                 best_comma = m
                         if best_comma:
@@ -491,7 +493,7 @@ class StreamingSentenceSplitter:
             else:
                 # No full stop yet. Only split on comma if buffer is getting long enough
                 best_comma = None
-                for m in re.finditer(r"[，,；;、：:]+", self._buf):
+                for m in re.finditer(r"(?:[，；、：]|[,;:](?=[^\d]))+", self._buf):
                     if m.start() >= curr_min:
                         best_comma = m
                         if (not self._first_chunk_emitted and m.start() >= curr_min) or m.start() >= 10 or len(self._buf) >= curr_max:
