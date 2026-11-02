@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import threading
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -74,20 +75,31 @@ class _StreamingParaformerBackend:
         self.sample_rate = sample_rate
         self._buffer: list[float] = []
         self._fed_samples: int = 0
+        # Every call runs via asyncio.to_thread on one shared native recognizer.
+        # Without this lock a cancel() (reset = destroy/recreate the stream) during
+        # TTS echo could run while a turn's finalize() was decoding that stream:
+        # use-after-free, SIGSEGV (seen 2026-11-02 14:02 and 14:04).
+        self._lock = threading.RLock()
 
     def reset(self) -> None:
-        self._buffer.clear()
-        self._fed_samples = 0
-        self.recognizer.reset()
+        with self._lock:
+            self._buffer.clear()
+            self._fed_samples = 0
+            self.recognizer.reset()
 
     def feed(self, samples: list[float], sample_rate: int) -> str:
-        self._buffer.extend(samples)
-        self._fed_samples += len(samples)
-        if not samples:
-            return ""
-        return self.recognizer.feed(samples, sample_rate).strip()
+        with self._lock:
+            self._buffer.extend(samples)
+            self._fed_samples += len(samples)
+            if not samples:
+                return ""
+            return self.recognizer.feed(samples, sample_rate).strip()
 
     def finalize(self, samples: list[float], sample_rate: int) -> str:
+        with self._lock:
+            return self._finalize_locked(samples, sample_rate)
+
+    def _finalize_locked(self, samples: list[float], sample_rate: int) -> str:
         buf = list(samples) if samples else self._buffer
         if buf:
             # Live partials begin only after VAD decides speech has started,
