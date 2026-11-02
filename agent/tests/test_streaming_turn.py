@@ -403,6 +403,39 @@ class StreamingTurnTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn("肖申克", "".join(texts[1:]))
         self.assertFalse(orch._speaking)
 
+    async def test_echo_segment_does_not_cancel_the_reply_being_spoken(self) -> None:
+        orch = object.__new__(Orchestrator)
+        orch._next_turn_id = 5
+        orch._active_turn_id = 5
+        orch._speaking = True
+        orch._turn_busy = False
+        orch._tts_abort = False
+        orch._active_tts_text = "长城又称万里长城，是中国古代的军事防御工程。"
+        orch._last_spoken_turn = ""
+        orch._last_tts_end_at = 0.0
+        orch.state = AgentState.TTS
+        resets: list[int] = []
+        orch.tts_queue = type("Q", (), {"mark_utterance_start": lambda self, g: resets.append(g)})()
+        states: list[AgentState] = []
+        orch.set_state = lambda st: states.append(st)  # type: ignore[method-assign]
+
+        class EchoSession:
+            async def finalize_samples(self, samples):
+                return {"text": "是中国古代的军事防御工程"}
+
+        orch._asr_session = EchoSession()
+
+        async def must_not_run(*a, **k):
+            raise AssertionError("echo must not start an LLM turn")
+
+        orch._run_llm = must_not_run  # type: ignore[method-assign]
+        await orch._process_turn({"duration_sec": 2.0, "samples": [0.0] * 32000})
+
+        self.assertEqual(orch._active_turn_id, 5)
+        self.assertEqual(resets, [])
+        self.assertTrue(orch._speaking)
+        self.assertNotIn(AgentState.LISTEN, states)
+
     async def test_streaming_turn_never_reprompts_after_a_length_limited_segment(self) -> None:
         """The RKNN session restarts on a fresh prompt, so it must not be asked to "continue"."""
         orch = object.__new__(Orchestrator)

@@ -751,15 +751,16 @@ class Orchestrator:
         await self._turn_queue.put(None)
 
     async def _process_turn(self, event: dict[str, Any]) -> None:
-        self._next_turn_id += 1
-        generation = self._next_turn_id
-        self._active_turn_id = generation
+        # The new turn (generation bump, TTS queue reset) only starts once ASR says this
+        # is real user speech. Starting it up front let a speaker echo picked up during
+        # playback cancel the reply being spoken, even though it was then dropped as echo.
+        was_speaking = self._speaking
+        started_turn = False
         self._turn_busy = True
-        self._tts_abort = False
-        self.tts_queue.mark_utterance_start(generation)
         duration = event.get("duration_sec", 0.0)
         LOG.info("[event] audio_segment %.2fs", duration)
-        self.set_state(AgentState.ASR)
+        if not was_speaking:
+            self.set_state(AgentState.ASR)
         session = self._asr_session
         try:
             if not session:
@@ -782,6 +783,12 @@ class Orchestrator:
                         cur_speak[:30],
                     )
                     return
+                self._next_turn_id += 1
+                generation = self._next_turn_id
+                self._active_turn_id = generation
+                self._tts_abort = False
+                self.tts_queue.mark_utterance_start(generation)
+                started_turn = True
                 await self._run_llm(
                     text,
                     generation=generation,
@@ -792,9 +799,12 @@ class Orchestrator:
         finally:
             if self._asr_session is session:
                 self._asr_session = None
-            self._speaking = False
             self._turn_busy = False
-            self.set_state(AgentState.LISTEN)
+            # A dropped echo/empty segment must not unmute the mic or reset the state
+            # while another turn (e.g. WebSocket chat) is still speaking.
+            if started_turn or not was_speaking:
+                self._speaking = False
+                self.set_state(AgentState.LISTEN)
 
     async def _enqueue_speak(
         self,

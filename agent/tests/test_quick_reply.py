@@ -24,6 +24,12 @@ class QuickReplyTests(unittest.TestCase):
         for q, want in cases.items():
             self.assertEqual(quick_reply_for(q, NOW), want, q)
 
+    def test_collapsed_forms_from_asr_normalization_match(self) -> None:
+        # normalize_user_text turns 谢谢 into 谢, 拜拜 into 拜, 谢谢你 into 谢你
+        for q in ("谢", "谢你", "谢谢你"):
+            self.assertEqual(quick_reply_for(q, NOW), "不客气，主人。", q)
+        self.assertEqual(quick_reply_for("拜", NOW), "好的，主人，回头见。")
+
     def test_clock_edge_cases(self) -> None:
         self.assertEqual(quick_reply_for("几点了", datetime.datetime(2026, 1, 1, 14, 5)), "现在是下午两点零五分。")
         self.assertEqual(quick_reply_for("几点了", datetime.datetime(2026, 1, 1, 20, 0)), "现在是晚上八点整。")

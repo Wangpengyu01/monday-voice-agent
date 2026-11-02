@@ -24,10 +24,19 @@ _TRAIL = re.compile(r"[呀啊呢吧嘛哈哦啦]+$")
 _PUNCT = re.compile(r"[\s，,。.！!？?、~～…]+")
 
 
+_REPEAT = re.compile(r"(.)\1+")
+
+
 def normalize_utterance(text: str) -> str:
+    """Strip punctuation, wake words and trailing particles; collapse 谢谢 -> 谢.
+
+    The ASR/chat path already collapses repeated characters (normalize_user_text),
+    so tables and input are both collapsed here to match either form.
+    """
     t = _PUNCT.sub("", text or "")
     t = _WAKE_PREFIX.sub("", t)
-    return _TRAIL.sub("", t)
+    t = _TRAIL.sub("", t)
+    return _REPEAT.sub(r"\1", t)
 
 
 def _period(hour: int) -> str:
@@ -68,6 +77,15 @@ _NIGHT = {"晚安", "我睡了", "我去睡觉了"}
 _TIME = {"几点了", "现在几点", "现在几点了", "现在什么时间", "现在是什么时间", "几点钟了", "现在几点钟"}
 _DATE = {"今天几号", "今天是几号", "今天几月几号", "今天是几月几号", "今天日期", "今天星期几", "今天是星期几", "今天周几", "今天礼拜几", "今天是什么日子"}
 _SKILLS = {"你会什么", "你能做什么", "你会干什么", "你有什么功能", "你都会什么", "你能干什么", "你可以做什么"}
+
+
+def _collapsed(words: set[str]) -> set[str]:
+    return {_REPEAT.sub(r"\1", w) for w in words}
+
+
+_GREETING, _WHO, _THANKS, _BYE, _NIGHT, _TIME, _DATE, _SKILLS = (
+    _collapsed(x) for x in (_GREETING, _WHO, _THANKS, _BYE, _NIGHT, _TIME, _DATE, _SKILLS)
+)
 
 
 def quick_reply_for(text: str, now: datetime.datetime | None = None) -> str | None:
