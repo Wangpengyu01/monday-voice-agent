@@ -14,6 +14,7 @@ if str(AGENT_ROOT) not in sys.path:
 
 from orchestrator.main import Orchestrator  # noqa: E402
 from orchestrator.events import AgentState  # noqa: E402
+from llm.client import LlmUnavailableError  # noqa: E402
 
 
 class FakeTtsQueue:
@@ -211,8 +212,20 @@ class StreamingTurnTests(unittest.IsolatedAsyncioTestCase):
         with patch("orchestrator.main.llm_chat_stream", failing_stream):
             await orch._run_llm("请解释一个复杂问题", generation=8, vad_end_at=time.monotonic())
 
-        self.assertEqual(recovery, [("音频信号略有微弱，主人请再说一遍。", 8)])
+        self.assertEqual(recovery, [("主人，刚才没处理好，请再说一遍。", 8)])
         self.assertIn({"type": "error", "code": "llm_failed"}, events)
+
+        recovery.clear()
+        events.clear()
+
+        def unavailable_stream(prompt: str, on_token, **kwargs):
+            raise LlmUnavailableError("llm_daemon not reachable")
+
+        with patch("orchestrator.main.llm_chat_stream", unavailable_stream):
+            await orch._run_llm("请解释一个复杂问题", generation=8, vad_end_at=time.monotonic())
+
+        self.assertEqual(recovery, [("主人，大模型正在启动，请稍等半分钟再问我。", 8)])
+        self.assertIn({"type": "error", "code": "llm_unavailable"}, events)
 
     async def test_streaming_turn_hides_thinking_and_enqueues_a_natural_clause(self) -> None:
         orch = object.__new__(Orchestrator)
