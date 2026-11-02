@@ -26,8 +26,9 @@ class _TextItem:
 @dataclass(frozen=True)
 class _WavItem:
     generation: int
-    wav: Path
+    wav: Path | None  # None (streaming only): end of a text item that produced no final chunk
     text: str
+    final: bool = True  # last piece of its text item (streaming backends split one text into chunks)
 
 
 class TtsQueue:
@@ -54,6 +55,10 @@ class TtsQueue:
         self._current_speaking_generation: int | None = None
         self._active_generation = 0
         self._engine_lock = asyncio.Lock()
+        # streaming backend (qwen3 daemon): requests are sent as soon as text arrives and their
+        # chunk streams are forwarded to _wav_q strictly in enqueue order
+        self._sources: asyncio.Queue = asyncio.Queue()
+        self._forward_task: asyncio.Task | None = None
 
     @property
     def is_playing(self) -> bool:
@@ -91,6 +96,8 @@ class TtsQueue:
     async def interrupt(self) -> list[str]:
         self._interrupted.set()
         pending = await self.discard_pending()
+        if getattr(self.engine, "streaming", False):
+            await self.engine.qwen3.cancel_all()
         await asyncio.to_thread(self.engine.stop_playback)
         LOG.info("[tts] interrupted, saved %d clauses for relay", len(pending))
         return pending
@@ -110,6 +117,8 @@ class TtsQueue:
                 self._text_q.task_done()
             except Exception:
                 break
+        if getattr(self.engine, "streaming", False):
+            self.engine.qwen3.cancel_all_nowait()
         try:
             self.engine.stop_playback()
         except Exception:
@@ -117,8 +126,13 @@ class TtsQueue:
 
     async def start(self) -> None:
         if self._synth_task is None:
-            self._synth_task = asyncio.create_task(self._synth_worker())
-            self._play_task = asyncio.create_task(self._play_worker())
+            if getattr(self.engine, "streaming", False):
+                self._synth_task = asyncio.create_task(self._stream_submit_worker())
+                self._forward_task = asyncio.create_task(self._stream_forward_worker())
+                self._play_task = asyncio.create_task(self._stream_play_worker())
+            else:
+                self._synth_task = asyncio.create_task(self._synth_worker())
+                self._play_task = asyncio.create_task(self._play_worker())
 
     def mark_utterance_start(self, generation: int = 0) -> None:
         self._active_generation = generation
@@ -182,7 +196,7 @@ class TtsQueue:
 
     async def stop(self) -> None:
         """Cancel queue workers during orchestrator shutdown; safe to call repeatedly."""
-        tasks = [task for task in (self._synth_task, self._play_task) if task is not None]
+        tasks = [t for t in (self._synth_task, self._forward_task, self._play_task) if t is not None]
         if not tasks:
             return
         self._interrupted.set()
@@ -192,7 +206,9 @@ class TtsQueue:
             task.cancel()
         await asyncio.gather(*tasks, return_exceptions=True)
         self._synth_task = None
+        self._forward_task = None
         self._play_task = None
+        self._sources = asyncio.Queue()
         self._current_speaking_chunk = None
         self._current_speaking_generation = None
 
@@ -200,8 +216,14 @@ class TtsQueue:
         from tts.tts_engine import TtsConfig
 
         assert isinstance(cfg, TtsConfig)
+        was_streaming = getattr(self.engine, "streaming", False)
         async with self._engine_lock:
             await asyncio.to_thread(self.engine.reconfigure, cfg)
+        if was_streaming != getattr(self.engine, "streaming", False) and self._synth_task is not None:
+            # backend family changed: restart the workers with the matching pipeline
+            await self.stop()
+            self._interrupted.clear()
+            await self.start()
         LOG.info(
             "[tts] reconfigured backend=%s sid=%d speed=%.2f",
             cfg.backend,
@@ -290,5 +312,116 @@ class TtsQueue:
                     LOG.info("[tts] play %.2fs%s", time.monotonic() - t0, tag)
             except Exception as exc:
                 LOG.error("[tts] play failed: %s", exc)
+            finally:
+                self._wav_q.task_done()
+
+    # ---- streaming backend (qwen3 daemon) ----
+
+    async def _stream_submit_worker(self) -> None:
+        """Send each text to the daemon right away so the next sentence generates while the
+        current one is still decoding/playing. _text_q.task_done() is left to the forwarder,
+        so wait_done() keeps waiting until the audio is queued."""
+        while True:
+            item = await self._text_q.get()
+            if item is None:
+                await self._sources.put(None)
+                self._text_q.task_done()
+                return
+            if item.wav is not None or self._interrupted.is_set() or item.generation != self._active_generation:
+                await self._sources.put((item, None))
+                continue
+            try:
+                _, chunks = await self.engine.qwen3.submit(item.text)
+                LOG.info("[tts] qwen3 submit (%d chars): %s", len(item.text), item.text[:40])
+            except Exception as exc:
+                LOG.error("[tts] qwen3 submit failed: %s", exc)
+                chunks = None
+            await self._sources.put((item, chunks))
+
+    def _live(self, generation: int) -> bool:
+        return not self._interrupted.is_set() and generation == self._active_generation
+
+    async def _stream_forward_worker(self) -> None:
+        while True:
+            src = await self._sources.get()
+            if src is None:
+                await self._wav_q.put(None)
+                return
+            item, chunks = src
+            try:
+                if item.wav is not None or chunks is None:
+                    # cached clip (ack), or a request that could not be sent
+                    if self._live(item.generation):
+                        await self._wav_q.put(_WavItem(item.generation, item.wav, item.text, True))
+                    continue
+                t0 = time.monotonic()
+                final_sent = False
+                first = True
+                while True:
+                    c = await chunks.get()
+                    if c.path is None:
+                        break
+                    if not self._live(item.generation) or final_sent:
+                        c.path.unlink(missing_ok=True)
+                        continue
+                    if first:
+                        LOG.info("[tts] qwen3 first chunk %.2fs (%d chars)", time.monotonic() - t0, len(item.text))
+                        first = False
+                    final_sent = c.final
+                    await self._wav_q.put(_WavItem(item.generation, c.path, item.text, c.final))
+                if self._live(item.generation) and not final_sent:
+                    await self._wav_q.put(_WavItem(item.generation, None, item.text, True))
+            except Exception as exc:
+                LOG.error("[tts] qwen3 forward failed: %s", exc)
+            finally:
+                self._text_q.task_done()
+
+    async def _stream_play_worker(self) -> None:
+        player = self.engine.stream_player
+        last_text: str | None = None
+        while True:
+            item = await self._wav_q.get()
+            try:
+                if item is None:
+                    return
+                if not self._live(item.generation):
+                    if item.wav is not None and item.wav.name.startswith("qtts_"):
+                        item.wav.unlink(missing_ok=True)
+                    continue
+                env = self.engine.stream_env()
+                if item.wav is not None:
+                    if self._first_play_at is None:
+                        self._first_play_at = time.monotonic()
+                        lat = self.first_play_latency_s
+                        if lat is not None:
+                            LOG.info("[tts] first_play latency=%.2fs", lat)
+                    if not player.active:
+                        await asyncio.to_thread(player.start, env)
+                    if item.text != last_text:
+                        LOG.info("[tts] speak (%d/%d): %s", self._played_chunks + 1, self._utterance_chunks, item.text[:80])
+                        last_text = item.text
+                    self._current_speaking_chunk = item.text
+                    self._current_speaking_generation = item.generation
+                    try:
+                        await asyncio.to_thread(player.write_wav, item.wav)
+                    finally:
+                        # daemon chunks are temp files; cached clips (ack) are reused
+                        if item.wav.name.startswith("qtts_"):
+                            item.wav.unlink(missing_ok=True)
+                if not item.final:
+                    continue
+                self._played_chunks += 1
+                if self._played_chunks < self._utterance_chunks:
+                    continue
+                if player.active:
+                    # utterance complete: let the device drain, then re-arm the mic
+                    t0 = time.monotonic()
+                    await asyncio.to_thread(player.finish, restore_mic=True, env=env)
+                    LOG.info("[tts] stream drained %.2fs", time.monotonic() - t0)
+                last_text = None
+                self._current_speaking_chunk = None
+                self._current_speaking_generation = None
+            except Exception as exc:
+                LOG.error("[tts] stream play failed: %s", exc)
             finally:
                 self._wav_q.task_done()

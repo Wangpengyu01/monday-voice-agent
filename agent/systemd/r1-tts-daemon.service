@@ -1,0 +1,29 @@
+[Unit]
+Description=R1 Qwen3-TTS daemon (RK1828 talker + RK3588 NPU decoder)
+After=rknn3.service r1-llm-daemon.service
+Wants=rknn3.service
+# load after the LLM so both models are not set up on the RK1828 at the same time
+Before=r1-orchestrator.service
+
+[Service]
+Type=simple
+# /dev/dma_heap (RK3588 NPU buffers) is root-only
+User=root
+Group=root
+WorkingDirectory=/userdata/qwen3tts/rknn_Qwen3_TTS_demo
+Environment=R1_TTS_SPEAKER=xiaolan
+Environment=R1_TTS_FIRST=19
+Environment=R1_TTS_MIN_NEXT=19
+ExecStartPre=/bin/mkdir -p /userdata/agent/logs
+# chunk WAVs are written here by root and deleted by the orchestrator (youyeetoo)
+ExecStartPre=/usr/bin/install -d -o youyeetoo -g youyeetoo /userdata/agent/run/tts
+ExecStartPre=/bin/rm -f /tmp/r1-tts.sock
+ExecStartPre=/bin/bash /userdata/agent/scripts/wait_rknn.sh 45
+# the talker prints every generated frame; keep only daemon events and errors in the log
+ExecStart=/bin/sh -c 'exec ./rknn_qwen3_tts_daemon /userdata/qwen3tts/rknn_Qwen3_TTS_demo/model /tmp/r1-tts.sock /userdata/agent/run/tts 2>&1 | grep --line-buffered -E "^\\[daemon\\]|[Ee]rror|fail|forced" >> /userdata/agent/logs/tts_daemon.log'
+Restart=on-failure
+RestartSec=10
+TimeoutStartSec=120
+
+[Install]
+WantedBy=multi-user.target

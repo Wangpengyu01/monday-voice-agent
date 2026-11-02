@@ -31,6 +31,7 @@ class TtsConfig:
     max_chars: int = 80
     out_wav: str = "/userdata/agent/run/tts/agent_tts_out.wav"
     play_script: str = "play_wav.sh"
+    qwen3_socket: str = "/tmp/r1-tts.sock"
 
 
 class TtsEngine:
@@ -42,9 +43,26 @@ class TtsEngine:
         self._play_lock = threading.Lock()
         self._play_stopped = False
         self._playback_env: dict[str, str] = {}
+        self.qwen3 = None
+        self.stream_player = None
         self._init_native()
 
+    @property
+    def streaming(self) -> bool:
+        """qwen3 backend: one request streams several chunk WAVs, played gaplessly."""
+        return self.qwen3 is not None
+
     def _init_native(self) -> None:
+        if self.cfg.backend == "qwen3":
+            from tts.qwen3_tts import Qwen3TtsClient, StreamPlayer
+
+            self._native = None
+            self.qwen3 = Qwen3TtsClient(self.cfg.qwen3_socket)
+            self.stream_player = StreamPlayer()
+            LOG.info("[tts] qwen3 backend via daemon %s", self.cfg.qwen3_socket)
+            return
+        self.qwen3 = None
+        self.stream_player = None
         try:
             from tts.sherpa_tts import SherpaOfflineTts, SherpaTtsConfig
 
@@ -78,7 +96,17 @@ class TtsEngine:
             or prev.sid != cfg.sid
             or prev.vocoder != cfg.vocoder
             or list(prev.rule_fsts) != list(cfg.rule_fsts)
+            or prev.qwen3_socket != cfg.qwen3_socket
         )
+        if self.qwen3 is not None or cfg.backend == "qwen3":
+            if reload:
+                if self.stream_player is not None:
+                    self.stream_player.stop()
+                if self._native is not None:
+                    self._native.close()  # type: ignore[union-attr]
+                    self._native = None
+                self._init_native()
+            return
         if self._native is not None:
             if reload:
                 self._native.close()  # type: ignore[union-attr]
@@ -112,6 +140,10 @@ class TtsEngine:
 
         out = Path(out_path or self.cfg.out_wav)
         out.parent.mkdir(parents=True, exist_ok=True)
+        if self.qwen3 is not None:
+            from tts.qwen3_tts import synthesize_blocking
+
+            return synthesize_blocking(text, out, self.cfg.qwen3_socket)
         if self._native is not None:
             return self._native.synthesize_to_wav(text, out)  # type: ignore[union-attr]
 
@@ -209,7 +241,15 @@ class TtsEngine:
         m = re.search(r"gain=([\d.]+)", stderr)
         return float(m.group(1)) if m else None
 
+    def stream_env(self) -> dict[str, str]:
+        env = dict(self._playback_env)
+        env["PLAYBACK_AGENT_TTS"] = "1"
+        env.setdefault("PLAYBACK_BUFFER_US", "100000")
+        return env
+
     def stop_playback(self) -> None:
+        if self.stream_player is not None:
+            self.stream_player.stop()
         with self._play_lock:
             self._play_stopped = True
             proc = self._play_proc

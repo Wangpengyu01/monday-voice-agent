@@ -4,7 +4,8 @@
 #   sudo bash board_apply_deploy.sh /tmp/r1-deploy/agent
 #
 # 只适配这块板子（板载 ES8388 麦克风、DSI 屏、只跑 llm_daemon）：
-# - 只装 r1-llm-daemon / r1-orchestrator / r1-agent-ui / r1-gpio-poweroff 四个服务
+# - 只装 r1-llm-daemon / r1-orchestrator / r1-agent-ui / r1-gpio-poweroff 四个服务，
+#   板上有 Qwen3-TTS（/userdata/qwen3tts）时再加 r1-tts-daemon
 # - 不装 r1-p4-eth（会改 eth0）、r1-agent-gui（会关 DSI 屏）、r1-webui、r1-vlm-daemon 等
 # - 部署前自动备份当前版本到 /userdata/backups/，出问题用 restore_r1_agent.sh 回退
 set -euo pipefail
@@ -14,6 +15,10 @@ AGENT=/userdata/agent
 BACKUPS=/userdata/backups
 USER_NAME=youyeetoo
 UNITS=(r1-llm-daemon r1-orchestrator r1-agent-ui r1-gpio-poweroff)
+TTS_BIN=/userdata/qwen3tts/rknn_Qwen3_TTS_demo/rknn_qwen3_tts_daemon
+if [ -x "$TTS_BIN" ]; then
+  UNITS+=(r1-tts-daemon)
+fi
 
 [ "$(id -u)" -eq 0 ] || { echo "需要 sudo" >&2; exit 1; }
 [ -f "$NEW/orchestrator/main.py" ] || { echo "不是 agent 目录: $NEW" >&2; exit 1; }
@@ -37,6 +42,11 @@ if ! cmp -s "$NEW/bin/llm_daemon" "$AGENT/bin/llm_daemon" \
   daemon_changed=1
 fi
 
+tts_changed=0
+if [ -x "$TTS_BIN" ] && ! cmp -s "$NEW/systemd/r1-tts-daemon.service" /etc/systemd/system/r1-tts-daemon.service; then
+  tts_changed=1
+fi
+
 echo "== 2/6 停止服务（llm_daemon 有变化才重启: $daemon_changed）"
 systemctl stop r1-orchestrator r1-agent-ui 2>/dev/null || true
 if [ "$daemon_changed" -eq 1 ]; then
@@ -58,6 +68,9 @@ for u in "${UNITS[@]}"; do
   install -m 644 "$AGENT/systemd/$u.service" /etc/systemd/system/
 done
 install -m 644 "$AGENT/systemd/r1-agent-logs.cron" /etc/cron.d/r1-agent-logs
+# 内核参数预留的 5 GB 大页没人用（RK1828 走 PCIe），开机还给系统；删掉这个文件即恢复
+install -m 644 "$AGENT/systemd/90-r1-free-hugepages.conf" /etc/sysctl.d/
+sysctl -q -p /etc/sysctl.d/90-r1-free-hugepages.conf || true
 install -d -o "$USER_NAME" -g "$USER_NAME" "/home/$USER_NAME/.config/autostart"
 install -m 644 -o "$USER_NAME" -g "$USER_NAME" \
   "$AGENT/scripts/xiaolan-gui-autostart.desktop" "/home/$USER_NAME/.config/autostart/"
@@ -69,6 +82,9 @@ LOG="$AGENT/logs/orchestrator.log"
 log_off=$(stat -c %s "$LOG" 2>/dev/null || echo 0)
 if [ "$daemon_changed" -eq 1 ] || ! systemctl is-active --quiet r1-llm-daemon; then
   systemctl start r1-llm-daemon
+fi
+if [ -x "$TTS_BIN" ] && { [ "$tts_changed" -eq 1 ] || ! systemctl is-active --quiet r1-tts-daemon; }; then
+  systemctl restart r1-tts-daemon
 fi
 systemctl restart r1-gpio-poweroff
 systemctl start r1-agent-ui

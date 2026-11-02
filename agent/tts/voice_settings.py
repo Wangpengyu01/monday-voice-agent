@@ -74,6 +74,8 @@ class VoiceProfile:
         return Path(self.model_dir) / self.model_file
 
     def available(self) -> bool:
+        if self.backend == "qwen3":
+            return True  # served by r1-tts-daemon; it may still be loading when we start
         p = Path(self.model_dir)
         if self.backend == "matcha":
             return (p / "model-steps-3.onnx").is_file()

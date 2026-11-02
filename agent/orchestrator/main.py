@@ -74,6 +74,13 @@ from tts.voice_settings import VoiceSettingsManager, is_voice_settings_query
 LOG = logging.getLogger("orchestrator")
 
 
+def _wav_seconds(path: Path) -> float:
+    import wave
+
+    with wave.open(str(path), "rb") as w:
+        return w.getnframes() / float(w.getframerate() or 1)
+
+
 def setup_logging(level: str = "INFO") -> None:
     logging.basicConfig(
         level=getattr(logging, level.upper(), logging.INFO),
@@ -334,6 +341,7 @@ class Orchestrator:
                 else tts_cfg.get("noise_scale", 0.667)
             ),
             max_chars=int(tts_cfg.get("max_chars", 80)),
+            qwen3_socket=str(tts_cfg.get("qwen3_socket", "/tmp/r1-tts.sock")),
         )
 
     async def _sync_tts_from_voice_settings(self) -> None:
@@ -2047,9 +2055,15 @@ class Orchestrator:
         fresh: dict[str, Path] = {}
         for i, phrase in enumerate(ACK_PHRASES):
             path = cache_dir / f"ack_{tag}_{i}.wav"
+            # sampling TTS (qwen3) can occasionally run on past the phrase: retry long clips
+            max_sec = 0.6 + 0.3 * len(phrase)
             try:
-                if not path.is_file() or path.stat().st_size < 1000:
+                for _ in range(4):
+                    if path.is_file() and path.stat().st_size >= 1000 and _wav_seconds(path) <= max_sec:
+                        break
                     await self.tts_queue.synthesize_to(phrase, path)
+                if _wav_seconds(path) > max_sec:
+                    raise RuntimeError(f"clip too long ({_wav_seconds(path):.1f}s)")
                 fresh[phrase] = path
             except Exception as exc:
                 LOG.warning("[llm] ack cache %r failed: %s", phrase, exc)
