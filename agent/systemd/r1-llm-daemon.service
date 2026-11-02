@@ -24,8 +24,8 @@ StandardOutput=append:/userdata/agent/logs/llm_daemon.log
 StandardError=append:/userdata/agent/logs/llm_daemon.log
 Restart=on-failure
 RestartSec=10
-TimeoutStartSec=180
-ExecStartPost=/bin/bash /userdata/agent/scripts/fix_llm_sock_perms.sh /tmp/r1-llm.sock 60
+TimeoutStartSec=360
+ExecStartPost=/bin/bash /userdata/agent/scripts/fix_llm_sock_perms.sh /tmp/r1-llm.sock 300
 
 [Install]
 WantedBy=multi-user.target

@@ -12,5 +12,5 @@ Hidden=false
 NoDisplay=false
 Categories=Utility;Audio;
 X-GNOME-Autostart-enabled=true
-X-GNOME-Autostart-Delay=15
+X-GNOME-Autostart-Delay=5
 X-GNOME-Autostart-Phase=Applications

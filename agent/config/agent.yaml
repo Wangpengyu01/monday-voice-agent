@@ -110,32 +110,33 @@ tts:
   noise_scale: 0.667
   max_chars: 160
   merge_max_chars: 80
+  # 板上 /userdata/voice 只有 matcha-icefall-zh-baker；melo / wnj_male 要先把模型放上去再启用
   voices:
     baker:
       label: 清亮女声
       backend: matcha
       model_dir: /userdata/voice/matcha-icefall-zh-baker
       sid: 0
-      default_speed: 1.0
-    melo:
-      label: 温柔女声
-      backend: vits
-      model_dir: /userdata/voice/vits-melo-tts-zh_en
-      sid: 0
-      noise_scale: 0.55
-      default_speed: 0.95
-      rule_fsts:
-        - /userdata/voice/vits-melo-tts-zh_en/date.fst
-        - /userdata/voice/vits-melo-tts-zh_en/number.fst
-    wnj_male:
-      label: 沉稳男声
-      backend: vits
-      model_dir: /userdata/voice/vits-zh-hf-fanchen-wnj
-      model_file: vits-zh-hf-fanchen-wnj.onnx
-      sid: 0
-      default_speed: 1.0
-      rule_fsts:
-        - /userdata/voice/vits-zh-hf-fanchen-wnj/number.fst
+      default_speed: 1.05
+    # melo:
+    #   label: 温柔女声
+    #   backend: vits
+    #   model_dir: /userdata/voice/vits-melo-tts-zh_en
+    #   sid: 0
+    #   noise_scale: 0.55
+    #   default_speed: 0.95
+    #   rule_fsts:
+    #     - /userdata/voice/vits-melo-tts-zh_en/date.fst
+    #     - /userdata/voice/vits-melo-tts-zh_en/number.fst
+    # wnj_male:
+    #   label: 沉稳男声
+    #   backend: vits
+    #   model_dir: /userdata/voice/vits-zh-hf-fanchen-wnj
+    #   model_file: vits-zh-hf-fanchen-wnj.onnx
+    #   sid: 0
+    #   default_speed: 1.0
+    #   rule_fsts:
+    #     - /userdata/voice/vits-zh-hf-fanchen-wnj/number.fst
 
 api:
   enabled: true
@@ -143,7 +144,9 @@ api:
   port: 8765
 
 camera:
-  enabled: true
+  # 板上没有摄像头：MIPI CSI 两路均无传感器（dmesg: No link between dphy and sensor），
+  # 未安装 MediaMTX，配置过的网络摄像头也连不上。接好摄像头后改回 true。
+  enabled: false
   # grab_backend: rtsp | mediamtx_rtsp (cache + local RTSP; no WHEP — preview uses daemon JPEG)
   grab_backend: mediamtx_rtsp
   mediamtx:
