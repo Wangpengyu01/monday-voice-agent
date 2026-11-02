@@ -43,6 +43,15 @@ class VerbalizeTests(unittest.TestCase):
             "第2名": "第二名",
             "第2章": "第二章",
             "没有数字": "没有数字",
+            "2000公里": "两千公里",
+            "大约2千公里": "大约两千公里",
+            "价格2万元": "价格两万元",
+            "2百多人": "两百多人",
+            "跑了2公里": "跑了两公里",
+            "等了2小时": "等了两小时",
+            "2年前": "两年前",
+            "2月份": "二月份",
+            "12个": "十二个",
         }
         for src, want in cases.items():
             self.assertEqual(verbalize_numbers(src), want, src)

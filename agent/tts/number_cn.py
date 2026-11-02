@@ -84,7 +84,11 @@ _PERCENT = re.compile(r"(?<![\d.])(\d+)(?:\.(\d+))?\s*[%％]")
 _DECIMAL = re.compile(r"(?<![\d.])(\d+)\.(\d+)(?![\d.])")
 _THOUSANDS = re.compile(r"(?<!\d)(\d{1,3}(?:,\d{3})+)(?!\d)")
 _INTEGER = re.compile(r"\d+")
-_LIANG_MEASURES = set("个点次天位本只件种条岁倍张台辆层名部句周对双")
+_LIANG_MEASURES = set("个点次天位本只件种条岁倍张台辆层名部句周对双年米斤克吨秒")
+# multi-char units where a bare 2 is said 两: 两公里 两小时 两分钟 两公斤
+_LIANG_UNITS = ("公里", "千米", "小时", "分钟", "公斤", "千克", "毫米", "厘米", "平方", "立方", "星期", "礼拜")
+# 2 before a magnitude: 两千 两万 两百 两亿 (2千 used to come out as 二千)
+_LIANG_MAGNITUDES = set("百千万亿")
 
 
 def verbalize_numbers(text: str) -> str:
@@ -108,8 +112,11 @@ def verbalize_numbers(text: str) -> str:
     def int_repl(m: re.Match[str]) -> str:
         tok = m.group(0)
         prev = text[m.start() - 1 : m.start()] if m.start() else ""
-        if tok == "2" and prev != "第" and text[m.end() : m.end() + 1] in _LIANG_MEASURES:
-            return "两"  # 两个 / 两点 / 两天
+        nxt = text[m.end() : m.end() + 2]
+        if tok == "2" and prev != "第" and (
+            nxt[:1] in _LIANG_MEASURES or nxt[:1] in _LIANG_MAGNITUDES or nxt.startswith(_LIANG_UNITS)
+        ):
+            return "两"  # 两个 / 两点 / 两千 / 两公里
         return _integer_token(tok)
 
     text = _INTEGER.sub(int_repl, text)
