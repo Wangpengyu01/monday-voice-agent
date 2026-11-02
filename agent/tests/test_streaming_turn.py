@@ -378,6 +378,12 @@ class StreamingTurnTests(unittest.IsolatedAsyncioTestCase):
             await orch._run_llm("你是谁", generation=11, vad_end_at=time.monotonic())
         self.assertEqual(spoken, ["我是小揽，您的语音管家，有事尽管吩咐。"])
 
+        spoken.clear()
+        with patch("orchestrator.main.llm_chat_stream", must_not_call):
+            await orch._run_llm("谢谢", generation=11, vad_end_at=time.monotonic())
+        # "谢谢" normalizes to "谢"; it must not be dropped as single-char noise
+        self.assertEqual(spoken, ["不客气，主人。"])
+
     async def test_ack_is_spoken_first_and_models_own_ack_is_dropped(self) -> None:
         orch = self._llm_turn_shell(12)
         orch.ack_enabled = True

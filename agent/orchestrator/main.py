@@ -1779,6 +1779,15 @@ class Orchestrator:
 
             self._paused_relay_text = None
 
+            # Before the filler filter: normalize_spoken_text collapses "谢谢" to "谢",
+            # which the single-char rule below would otherwise drop as noise.
+            quick = quick_reply_for(u_clean) if getattr(self, "quick_reply_enabled", False) else None
+            if quick:
+                LOG.info("[llm] quick reply (skip LLM): %s", quick)
+                await self._speak_turn(quick, generation=generation)
+                self._record_chat_turn(user_prompt, quick)
+                return
+
             if len(normalized) <= 1 or (normalized and set(normalized) <= set("啊嗯呃哦呀吧呵哈嘿")):
                 LOG.info("[llm] ignored single char or filler noise: %s", u_clean)
                 self.set_state(AgentState.LISTEN)
@@ -1806,12 +1815,6 @@ class Orchestrator:
                 await self._speak_turn(speak, generation=generation)
                 return
 
-            quick = quick_reply_for(user_prompt) if getattr(self, "quick_reply_enabled", False) else None
-            if quick:
-                LOG.info("[llm] quick reply (skip LLM): %s", quick)
-                await self._speak_turn(quick, generation=generation)
-                self._record_chat_turn(user_prompt, quick)
-                return
 
         ack_played = False
         if not is_companion and getattr(self, "ack_enabled", False):
