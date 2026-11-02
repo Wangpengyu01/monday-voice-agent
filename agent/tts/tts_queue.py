@@ -20,19 +20,7 @@ TTS_RUN_DIR = Path("/userdata/agent/run/tts")
 class _TextItem:
     generation: int
     text: str
-
-
-@dataclass(frozen=True)
-class _WavItem:
-    generation: int
-    wav: Path
-    text: str
-
-
-@dataclass(frozen=True)
-class _TextItem:
-    generation: int
-    text: str
+    wav: Path | None = None  # pre-synthesized clip (ack phrases): skip synth
 
 
 @dataclass(frozen=True)
@@ -65,6 +53,7 @@ class TtsQueue:
         self._current_speaking_chunk: str | None = None
         self._current_speaking_generation: int | None = None
         self._active_generation = 0
+        self._engine_lock = asyncio.Lock()
 
     @property
     def is_playing(self) -> bool:
@@ -161,6 +150,20 @@ class TtsQueue:
         self._utterance_chunks += 1
         await self._text_q.put(_TextItem(generation, text))
 
+    async def enqueue_wav(self, text: str, wav: Path, *, generation: int | None = None) -> bool:
+        """Queue an already-synthesized clip; keeps order with text items."""
+        generation = self._active_generation if generation is None else generation
+        if self._interrupted.is_set() or generation != self._active_generation or not wav.is_file():
+            return False
+        self._utterance_chunks += 1
+        await self._text_q.put(_TextItem(generation, text, wav))
+        return True
+
+    async def synthesize_to(self, text: str, path: Path) -> Path:
+        """Synthesize outside the queue (cache warm-up), serialized with the synth worker."""
+        async with self._engine_lock:
+            return await asyncio.to_thread(self.engine.synthesize, text, str(path))
+
     async def flush(self) -> None:
         return
 
@@ -197,7 +200,8 @@ class TtsQueue:
         from tts.tts_engine import TtsConfig
 
         assert isinstance(cfg, TtsConfig)
-        await asyncio.to_thread(self.engine.reconfigure, cfg)
+        async with self._engine_lock:
+            await asyncio.to_thread(self.engine.reconfigure, cfg)
         LOG.info(
             "[tts] reconfigured backend=%s sid=%d speed=%.2f",
             cfg.backend,
@@ -214,6 +218,9 @@ class TtsQueue:
                     return
                 if self._interrupted.is_set() or item.generation != self._active_generation:
                     continue
+                if item.wav is not None:
+                    await self._wav_q.put(_WavItem(item.generation, item.wav, item.text))
+                    continue
                 TTS_RUN_DIR.mkdir(parents=True, exist_ok=True)
                 path = TTS_RUN_DIR / f"agent_tts_{self._slot}.wav"
                 self._slot += 1
@@ -223,7 +230,8 @@ class TtsQueue:
                     except Exception:
                         path = TTS_RUN_DIR / f"agent_tts_{time.monotonic_ns()}_{self._slot}.wav"
                 t0 = time.monotonic()
-                wav = await asyncio.to_thread(self.engine.synthesize, item.text, str(path))
+                async with self._engine_lock:
+                    wav = await asyncio.to_thread(self.engine.synthesize, item.text, str(path))
                 if self._interrupted.is_set() or item.generation != self._active_generation:
                     continue
                 LOG.info("[tts] synth %.2fs (%d chars)", time.monotonic() - t0, len(item.text))
@@ -266,7 +274,8 @@ class TtsQueue:
                         self._current_speaking_chunk = None
                         self._current_speaking_generation = None
                     try:
-                        if item.wav and item.wav.is_file() and str(item.wav).startswith(str(TTS_RUN_DIR)):
+                        # only temp files; cached clips (ack) live elsewhere and are reused
+                        if item.wav and item.wav.parent == TTS_RUN_DIR and item.wav.is_file():
                             item.wav.unlink(missing_ok=True)
                     except Exception:
                         pass

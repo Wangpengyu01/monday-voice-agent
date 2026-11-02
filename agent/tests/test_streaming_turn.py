@@ -25,6 +25,10 @@ class FakeTtsQueue:
     async def enqueue(self, text: str, *, generation: int) -> None:
         self.enqueued.append((text, generation))
 
+    async def enqueue_wav(self, text: str, wav, *, generation: int) -> bool:
+        self.enqueued.append(("[clip]" + text, generation))
+        return True
+
     async def wait_done(self, *, generation: int) -> None:
         self.first_play_at = time.monotonic()
 
@@ -324,6 +328,74 @@ class StreamingTurnTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn("六十", spoken)
         self.assertNotIn("需要我", spoken)
         self.assertNotIn("需要我", orch._last_spoken_turn)
+
+    def _llm_turn_shell(self, turn_id: int) -> Orchestrator:
+        orch = object.__new__(Orchestrator)
+        orch._chat_turns = []
+        orch.history_idle_clear_sec = 0
+        orch.history_max_turns = 0
+        orch.system_prompt = ""
+        orch.socket_path = "/ignored"
+        orch.max_new_tokens = 64
+        orch._tts_abort = False
+        orch._active_turn_id = turn_id
+        orch._active_tts_text = ""
+        orch._last_spoken_turn = ""
+        orch._last_tts_end_at = 0.0
+        orch._listen_cooldown_until = 0.0
+        orch.listen_cooldown_sec = 0.2
+        orch._paused_relay_text = None
+        orch._current_splitter = None
+        orch._speaking = False
+        orch.state = AgentState.LLM
+        orch.tts_queue = FakeTtsQueue()
+
+        async def emit(event: dict) -> None:
+            return None
+
+        async def prepare() -> None:
+            return None
+
+        orch.emit = emit  # type: ignore[method-assign]
+        orch._prepare_llm_call = prepare  # type: ignore[method-assign]
+        orch.set_state = lambda state: None  # type: ignore[method-assign]
+        return orch
+
+    async def test_trivial_question_is_answered_without_the_llm(self) -> None:
+        orch = self._llm_turn_shell(11)
+        orch.quick_reply_enabled = True
+        spoken: list[str] = []
+
+        async def speak(text: str, *, generation: int) -> None:
+            spoken.append(text)
+
+        orch._speak_turn = speak  # type: ignore[method-assign]
+
+        def must_not_call(*args, **kwargs):
+            raise AssertionError("LLM must not be called for a trivial question")
+
+        with patch("orchestrator.main.llm_chat_stream", must_not_call):
+            await orch._run_llm("你是谁", generation=11, vad_end_at=time.monotonic())
+        self.assertEqual(spoken, ["我是小揽，您的语音管家，有事尽管吩咐。"])
+
+    async def test_ack_is_spoken_first_and_models_own_ack_is_dropped(self) -> None:
+        orch = self._llm_turn_shell(12)
+        orch.ack_enabled = True
+        orch._ack_cache = {"好的，": Path("/cache/ack_ok.wav")}
+
+        def fake_stream(prompt: str, on_token, **kwargs):
+            for piece in ("好的，主人。", "我推荐肖申克的救赎，", "情节紧凑又温暖。"):
+                on_token(piece)
+            return {"text": "好的，主人。我推荐肖申克的救赎，情节紧凑又温暖。", "ttft_s": 0.01}
+
+        with patch("orchestrator.main.llm_chat_stream", fake_stream):
+            await orch._run_llm("推荐一部适合周末看的电影", generation=12, vad_end_at=time.monotonic())
+
+        texts = [t for t, _ in orch.tts_queue.enqueued]
+        self.assertEqual(texts[0], "[clip]好的，")
+        self.assertNotIn("好的", "".join(texts[1:]))
+        self.assertIn("肖申克", "".join(texts[1:]))
+        self.assertFalse(orch._speaking)
 
     async def test_streaming_turn_never_reprompts_after_a_length_limited_segment(self) -> None:
         """The RKNN session restarts on a fresh prompt, so it must not be asked to "continue"."""

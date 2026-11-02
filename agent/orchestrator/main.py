@@ -42,6 +42,7 @@ from asr.sense_voice import SenseVoiceConfig
 from asr.sherpa_streaming_asr import StreamingParaformerConfig
 from asr.vad_stream import VadConfig, VadStream
 from llm.client import LlmUnavailableError, llm_chat_stream, llm_clear_history, llm_ping
+from orchestrator.quick_reply import ACK_PHRASES, ack_for, quick_reply_for, strip_leading_ack
 from orchestrator.config_loader import load_yaml
 from orchestrator.dialogue_policy import (
     can_barge_in,
@@ -283,6 +284,10 @@ class Orchestrator:
         self.max_new_tokens = int(cfg.get("max_new_tokens", 64))
         self.history_max_turns = int(cfg.get("history_max_turns", 4))
         self.history_idle_clear_sec = float(cfg.get("history_idle_clear_sec", 600))
+        dialog_cfg = cfg.get("dialog") or {}
+        self.quick_reply_enabled = str(dialog_cfg.get("quick_reply", "true")).lower() not in ("0", "false", "no")
+        self.ack_enabled = str(dialog_cfg.get("ack_before_answer", "true")).lower() not in ("0", "false", "no")
+        self._ack_cache: dict[str, Path] = {}
         self.system_prompt = (cfg.get("system_prompt") or "").strip()
         self._chat_turns: list[tuple[str, str]] = []
         self._llm_last_turn_at = 0.0
@@ -333,6 +338,8 @@ class Orchestrator:
 
     async def _sync_tts_from_voice_settings(self) -> None:
         await self.tts_queue.reconfigure(self._tts_config_from_voice())
+        self._ack_cache = {}
+        asyncio.create_task(self._warm_ack_cache())
         self.tts_queue.engine.set_playback_env(self.audio_profile.playback_env())
         p = self.voice_settings.active_profile()
         rt = self.voice_settings.runtime
@@ -1799,6 +1806,17 @@ class Orchestrator:
                 await self._speak_turn(speak, generation=generation)
                 return
 
+            quick = quick_reply_for(user_prompt) if getattr(self, "quick_reply_enabled", False) else None
+            if quick:
+                LOG.info("[llm] quick reply (skip LLM): %s", quick)
+                await self._speak_turn(quick, generation=generation)
+                self._record_chat_turn(user_prompt, quick)
+                return
+
+        ack_played = False
+        if not is_companion and getattr(self, "ack_enabled", False):
+            ack_played = await self._play_ack(user_prompt, generation=generation)
+
         await self._prepare_llm_call()
         prompt = self._build_llm_prompt(user_prompt)
         LOG.info(
@@ -1844,6 +1862,10 @@ class Orchestrator:
                     if is_echo_reply(user_prompt, chunk):
                         LOG.warning("[llm] suppressed echo chunk: %s", chunk)
                         continue
+                    if ack_played and int(tts_state["n"]) == 0:
+                        chunk = strip_leading_ack(chunk)
+                        if not is_speakable(sanitize_tts_text(chunk)):
+                            continue
                     if int(tts_state["n"]) > 0 and is_closing_filler(chunk):
                         LOG.info("[llm] dropped closing filler: %s", chunk)
                         continue
@@ -1865,6 +1887,10 @@ class Orchestrator:
                     if is_echo_reply(user_prompt, chunk):
                         LOG.warning("[llm] suppressed echo chunk: %s", chunk)
                         continue
+                    if ack_played and int(tts_state["n"]) == 0:
+                        chunk = strip_leading_ack(chunk)
+                        if not is_speakable(sanitize_tts_text(chunk)):
+                            continue
                     if int(tts_state["n"]) > 0 and is_closing_filler(chunk):
                         LOG.info("[llm] dropped closing filler: %s", chunk)
                         continue
@@ -1972,6 +1998,41 @@ class Orchestrator:
                     LOG.exception("[tts] recovery prompt failed")
         finally:
             self._current_splitter = None
+            if ack_played and int(tts_state["n"]) == 0:
+                self._speaking = False
+
+    async def _play_ack(self, user_text: str, *, generation: int) -> bool:
+        """Say "嗯，"/"好的，" from a cached clip right away, before the LLM answer."""
+        phrase = ack_for(user_text)
+        wav = getattr(self, "_ack_cache", {}).get(phrase)
+        if wav is None or self._tts_abort or generation != self._active_turn_id:
+            return False
+        if not await self.tts_queue.enqueue_wav(phrase, wav, generation=generation):
+            return False
+        self._speaking = True
+        LOG.info("[llm] ack before answer: %s", phrase)
+        await self.emit({"type": "tts_sentence", "text": phrase})
+        return True
+
+    async def _warm_ack_cache(self) -> None:
+        """Pre-synthesize ack phrases for the current voice/speed so they play instantly."""
+        if not self.ack_enabled:
+            return
+        rt = self.voice_settings.runtime if getattr(self, "voice_settings", None) else None
+        tag = f"{getattr(rt, 'voice_id', 'default')}_{getattr(rt, 'speed', 1.0):.2f}"
+        cache_dir = self.agent_root / "run" / "ack_cache"
+        cache_dir.mkdir(parents=True, exist_ok=True)
+        fresh: dict[str, Path] = {}
+        for i, phrase in enumerate(ACK_PHRASES):
+            path = cache_dir / f"ack_{tag}_{i}.wav"
+            try:
+                if not path.is_file() or path.stat().st_size < 1000:
+                    await self.tts_queue.synthesize_to(phrase, path)
+                fresh[phrase] = path
+            except Exception as exc:
+                LOG.warning("[llm] ack cache %r failed: %s", phrase, exc)
+        self._ack_cache = fresh
+        LOG.info("[llm] ack cache ready (%d phrases, %s)", len(fresh), tag)
 
     async def run(self, inject_wav: str | None = None) -> None:
         self._loop = asyncio.get_running_loop()
@@ -1990,6 +2051,7 @@ class Orchestrator:
             }
         )
         await self.tts_queue.start()
+        asyncio.create_task(self._warm_ack_cache())
         try:
             if self.api_enabled:
                 try:

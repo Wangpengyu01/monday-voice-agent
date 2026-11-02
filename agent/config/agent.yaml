@@ -12,6 +12,11 @@ system_prompt: |
 # 语音回答的兜底上限（约三百字）。主要靠提示词让回答简短；RKNN 上下文共 1024 token，
 # 系统提示（含语音设置和当前时间）约占四百 token，加上本上限仍在上下文以内。到上限时程序会补一句提示，不会半句断掉。
 max_new_tokens: 256
+dialog:
+  # 「你是谁」「几点了」「谢谢」这类整句短问题本地直接回答，不走大模型
+  quick_reply: true
+  # 走大模型的问题先说一声「嗯，/好的，/我想想，」（预先合成，立刻出声），再说答案
+  ack_before_answer: true
 # InternVL 4B can anchor to an unrelated previous turn; send only the current request
 # until multi-turn context is made reliable with the model's native chat template.
 history_max_turns: 0
