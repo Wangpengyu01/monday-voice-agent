@@ -7,6 +7,26 @@ import time
 import uuid
 from collections.abc import Callable
 
+# llm_daemon recreates its socket on restart; a request that lands in that gap
+# fails at connect() before any token is produced, so retrying there is safe.
+CONNECT_RETRY_SEC = 3.0
+
+
+class LlmUnavailableError(ConnectionError):
+    """llm_daemon socket missing or refusing connections (daemon down or restarting)."""
+
+
+def _connect(s: socket.socket, sock_path: str, retry_sec: float = CONNECT_RETRY_SEC) -> None:
+    deadline = time.monotonic() + retry_sec
+    while True:
+        try:
+            s.connect(sock_path)
+            return
+        except (FileNotFoundError, ConnectionRefusedError) as exc:
+            if time.monotonic() >= deadline:
+                raise LlmUnavailableError(f"llm_daemon not reachable at {sock_path}: {exc}") from exc
+            time.sleep(0.2)
+
 
 def _read_chat_stream(
     sock_path: str,
@@ -22,7 +42,7 @@ def _read_chat_stream(
 
     with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as s:
         s.settimeout(120.0)
-        s.connect(sock_path)
+        _connect(s, sock_path)
         s.sendall((json.dumps(payload, ensure_ascii=False, separators=(",", ":")) + "\n").encode("utf-8"))
         buf = b""
         usage: dict = {}

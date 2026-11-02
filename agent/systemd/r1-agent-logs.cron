@@ -1,0 +1,2 @@
+# 安装到 /etc/cron.d/r1-agent-logs：每小时检查一次小揽日志，超过 20MB 就轮转
+17 * * * * youyeetoo /bin/bash /userdata/agent/scripts/rotate_logs.sh /userdata/agent/logs

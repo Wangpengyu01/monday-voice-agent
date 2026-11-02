@@ -41,7 +41,7 @@ from asr.normalize import normalize_user_text
 from asr.sense_voice import SenseVoiceConfig
 from asr.sherpa_streaming_asr import StreamingParaformerConfig
 from asr.vad_stream import VadConfig, VadStream
-from llm.client import llm_chat_stream, llm_clear_history, llm_ping
+from llm.client import LlmUnavailableError, llm_chat_stream, llm_clear_history, llm_ping
 from orchestrator.config_loader import load_yaml
 from orchestrator.dialogue_policy import (
     can_barge_in,
@@ -1946,11 +1946,20 @@ class Orchestrator:
             if self._tts_abort:
                 LOG.info("[barge-in] skipped post-abort cooldown")
         except Exception as exc:
-            LOG.exception("[llm] request failed (%s): %r", type(exc).__name__, exc)
-            await self.emit({"type": "error", "code": "llm_failed"})
+            unavailable = isinstance(exc, LlmUnavailableError)
+            if unavailable:
+                LOG.error("[llm] daemon unavailable: %s", exc)
+            else:
+                LOG.exception("[llm] request failed (%s): %r", type(exc).__name__, exc)
+            await self.emit({"type": "error", "code": "llm_unavailable" if unavailable else "llm_failed"})
             if not self._tts_abort and generation == self._active_turn_id:
+                msg = (
+                    "主人，大模型正在启动，请稍等半分钟再问我。"
+                    if unavailable
+                    else "主人，刚才没处理好，请再说一遍。"
+                )
                 try:
-                    await self._speak_turn("音频信号略有微弱，主人请再说一遍。", generation=generation)
+                    await self._speak_turn(msg, generation=generation)
                 except Exception:
                     LOG.exception("[tts] recovery prompt failed")
         finally:
