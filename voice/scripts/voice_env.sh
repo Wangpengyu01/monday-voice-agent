@@ -34,8 +34,8 @@ export ASR_BOOST_MIN_PEAK="${ASR_BOOST_MIN_PEAK:-2500}"
 export ASR_TARGET_PEAK="${ASR_TARGET_PEAK:-12000}"
 export ASR_MAX_GAIN="${ASR_MAX_GAIN:-12.0}"
 
-# Playback: headphone=3.5mm 外接音响 | onboard=板载无源喇叭
-export PLAYBACK_ROUTE="${PLAYBACK_ROUTE:-headphone}"
+# Playback: both=3.5mm + 板载喇叭双路同时输出
+export PLAYBACK_ROUTE="${PLAYBACK_ROUTE:-both}"
 export PLAYBACK_MONO="${PLAYBACK_MONO:-stereo}"
 export PLAYBACK_CHANNELS="${PLAYBACK_CHANNELS:-2}"
 

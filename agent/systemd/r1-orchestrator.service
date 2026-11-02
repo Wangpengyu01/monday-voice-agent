@@ -11,9 +11,9 @@ SupplementaryGroups=audio
 Environment=AGENT_ROOT=/userdata/agent
 Environment=PYTHONPATH=/userdata/agent
 Environment=LD_LIBRARY_PATH=/userdata/voice/sherpa-onnx-v1.12.8-linux-aarch64-shared-cpu/lib
-Environment=AGENT_MIC_CAPTURE_GAIN=6
+Environment=AGENT_MIC_CAPTURE_GAIN=8
 WorkingDirectory=/userdata/agent
-ExecStartPre=/bin/bash /userdata/agent/scripts/fix_llm_sock_perms.sh /tmp/r1-llm.sock 90
+ExecStartPre=+/bin/bash /userdata/agent/scripts/fix_llm_sock_perms.sh /tmp/r1-llm.sock 90
 ExecStartPre=/bin/bash /userdata/agent/scripts/orchestrator_wait_infer_sock.sh
 ExecStartPre=/bin/bash /userdata/agent/scripts/wait_fy_sp701.sh
 ExecStartPre=-/bin/bash /userdata/voice/scripts/voice_hw_board.sh

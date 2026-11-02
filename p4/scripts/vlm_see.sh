@@ -12,10 +12,25 @@ fi
 bash "${SCRIPTS}/wait_rknn.sh"
 bash "${SCRIPTS}/p4_check_1828.sh"
 
-python3 "${SCRIPTS}/frame_prepare.py" "${SRC}" "${VLM_FRAME}" "${VLM_SIZE}"
+if [ "${SRC}" = "${VLM_FRAME}" ]; then
+  : # already at destination
+elif file "${SRC}" 2>/dev/null | grep -q "${VLM_SIZE}x${VLM_SIZE}"; then
+  cp -f "${SRC}" "${VLM_FRAME}"
+else
+  python3 "${SCRIPTS}/frame_prepare.py" "${SRC}" "${VLM_FRAME}" "${VLM_SIZE}"
+fi
 
 PROMPT="${2:-${VLM_PROMPT}}"
 echo "[VLM] ${PROMPT}" >&2
+
+if [ ! -d "${VLM_DEMO}" ] || [ ! -x "${VLM_DEMO}/rknn_internvl3_demo" ]; then
+  echo "[VLM] 错误: 未找到 InternVL 执行程序 (${VLM_DEMO}/rknn_internvl3_demo)" >&2
+  echo "[VLM] 板卡缺少 /userdata/rknn_InternVLM_demo 目录！" >&2
+  echo "[VLM] 解决方式: 从电脑推送至板端:" >&2
+  echo "    adb push rknn_InternVLM_demo /userdata/" >&2
+  echo "    adb shell chmod +x /userdata/rknn_InternVLM_demo/rknn_internvl3_demo" >&2
+  exit 1
+fi
 
 export LD_LIBRARY_PATH="${VLM_LD_LIBRARY_PATH}"
 cd "${VLM_DEMO}"
@@ -56,11 +71,11 @@ if [ -z "${TEXT}" ]; then
   TEXT=$(grep -E '^[^W ].*[一-龥a-zA-Z]' "${LOG}" | tail -3 || true)
 fi
 
-CAPTION="$(printf '%s\n' "${TEXT}" | sed '/^[[:space:]]*$/d' | head -1)"
+CAPTION="$(printf '%s\n' "${TEXT}" | sed '/^[[:space:]]*$/d' | tr '\n' ' ' | sed 's/  */ /g; s/^ //; s/ $//')"
 
 echo "[VLM] ${MS} ms ${VISION}"
 echo "${CAPTION}"
 
-if [ -n "${CAPTION}" ]; then
+if [ -n "${CAPTION}" ] && [ "${P4_TTS:-1}" = "1" ]; then
   bash "${SCRIPTS}/p4_tts.sh" "${CAPTION}" || true
 fi

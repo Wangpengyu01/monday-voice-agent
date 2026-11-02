@@ -167,7 +167,8 @@ class TtsEngine:
         env = os.environ.copy()
         env.update(self._playback_env)
         env["PLAYBACK_AGENT_TTS"] = "1"
-        env.setdefault("PLAYBACK_BUFFER_US", "160000")
+        env["PLAYBACK_PULSE_LATENCY_MS"] = "40"
+        env.setdefault("PLAYBACK_BUFFER_US", "40000")
         if continuation:
             env["PLAYBACK_CONTINUATION"] = "1"
             env["PLAYBACK_WARMUP_SEC"] = "0"
@@ -176,10 +177,10 @@ class TtsEngine:
             env["PLAYBACK_TRIM_MS"] = "0"
             env["PLAYBACK_FADE_OUT_MS"] = "0"
         else:
-            env["PLAYBACK_WARMUP_SEC"] = env.get("PLAYBACK_WARMUP_SEC", "0.08")
-            env["PLAYBACK_LEAD_MS"] = env.get("PLAYBACK_LEAD_MS", "80")
-            env["PLAYBACK_FADE_MS"] = env.get("PLAYBACK_FADE_MS", "12")
-            env["PLAYBACK_FADE_OUT_MS"] = env.get("PLAYBACK_FADE_OUT_MS", "20")
+            env["PLAYBACK_WARMUP_SEC"] = "0"
+            env["PLAYBACK_LEAD_MS"] = "0"
+            env["PLAYBACK_FADE_MS"] = "4"
+            env["PLAYBACK_FADE_OUT_MS"] = "10"
         if not last_in_utterance:
             env["VOICE_RESTORE_MIC"] = "0"
         if utterance_gain is not None:

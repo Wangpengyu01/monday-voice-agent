@@ -29,6 +29,19 @@ class _WavItem:
     text: str
 
 
+@dataclass(frozen=True)
+class _TextItem:
+    generation: int
+    text: str
+
+
+@dataclass(frozen=True)
+class _WavItem:
+    generation: int
+    wav: Path
+    text: str
+
+
 class TtsQueue:
     def __init__(
         self,

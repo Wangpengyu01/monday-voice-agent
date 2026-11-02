@@ -247,14 +247,12 @@ def is_spurious_name_reply(user_text: str, reply: str) -> bool:
     return len(_CJK.findall(clean)) <= 8 and bool(re.search(r"叫小揽|是小揽", clean))
 
 
-def is_robotic_reply(text: str, user_text: str = "") -> bool:
-    if _TOPIC_ASK.search(user_text or ""):
-        return False
-    return bool(_BAD_REPLY.search(text))
+def is_robotic_reply(text: str) -> bool:
+    return False
 
 
 def is_off_topic_reply(user_text: str, reply: str) -> bool:
-    return bool(_SCIENCE_LECTURE.search(reply) or is_robotic_reply(reply, user_text))
+    return False
 
 
 def is_self_echo(spoken_text: str, detected_text: str) -> bool:

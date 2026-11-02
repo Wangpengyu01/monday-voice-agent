@@ -84,7 +84,7 @@ def append_fade_out(samples, rate=16000, fade_ms=15):
     """Short fade-out so chunk boundaries do not click/pop."""
     fade_n = min(int(rate * fade_ms / 1000), len(samples))
     if fade_n <= 1:
-        return samples
+        return list(samples)
     out = list(samples[:-fade_n])
     start = len(samples) - fade_n
     for i in range(fade_n):
