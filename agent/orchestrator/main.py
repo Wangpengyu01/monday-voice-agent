@@ -1496,8 +1496,8 @@ class Orchestrator:
     ) -> str:
         prompt = user_prompt.strip() or self.camera_prompt
 
-        # 1. Cloud VLM API if configured
-        if self.camera_api_url and self.camera_api_key:
+        # 1. Cloud / LAN VLM API if configured (api_key optional for local Ollama/vLLM)
+        if self.camera_api_url:
             try:
                 import base64
                 with open(frame_path, "rb") as f:
@@ -1522,13 +1522,13 @@ class Orchestrator:
                     "max_tokens": 128,
                     "temperature": 0.2,
                 }
+                headers = {"Content-Type": "application/json"}
+                if self.camera_api_key:
+                    headers["Authorization"] = f"Bearer {self.camera_api_key}"
                 req = urllib.request.Request(
                     endpoint,
                     data=json.dumps(payload).encode("utf-8"),
-                    headers={
-                        "Content-Type": "application/json",
-                        "Authorization": f"Bearer {self.camera_api_key}",
-                    },
+                    headers=headers,
                 )
                 with urllib.request.urlopen(req, timeout=12) as resp:
                     res = json.loads(resp.read().decode("utf-8"))
@@ -1536,7 +1536,7 @@ class Orchestrator:
                 if cap:
                     return cap
             except Exception as exc:
-                LOG.warning("[vision] cloud VLM call failed: %s", exc)
+                LOG.warning("[vision] VLM API call failed: %s", exc)
 
         # 2. Board RKNN VLM (P5b socket or legacy run_board_vlm.sh)
         try:
@@ -1548,8 +1548,12 @@ class Orchestrator:
                     on_token=on_token,
                     max_new_tokens=self.camera_see_max_new_tokens,
                 )
-            else:
+            elif self.camera_vlm_cmd:
+                # Legacy path stops llm_daemon while the VLM demo runs (up to 200s).
                 cap = self.brain.board_vlm(frame_path, prompt)
+            else:
+                LOG.info("[vision] no VLM backend (vlm_daemon off, camera.vlm_cmd empty); skip board VLM")
+                cap = ""
             if cap:
                 return cap
         except Exception as exc:

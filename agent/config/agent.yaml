@@ -156,7 +156,9 @@ camera:
   see_max_new_tokens: 96
   prompt: "用一句话简短描述画面中的核心物品和场景。"
   # P5b: see/chat via vlm_daemon socket (inference.backend). Legacy: run_board_vlm.sh
-  vlm_cmd: "/userdata/agent/scripts/run_board_vlm.sh"
+  # Empty = never run run_board_vlm.sh (it stops llm_daemon for up to 200s while the
+  # VLM demo runs). Set to the script path only when that pause is acceptable.
+  vlm_cmd: ""
   # Fast cloud/LAN VLM API (supports OpenAI-compatible endpoints e.g. Qwen-VL, Ollama, vLLM)
   # When configured, response latency is ~1.0s (skipping board model reload)
   api_url: ""
