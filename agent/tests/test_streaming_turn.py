@@ -436,6 +436,36 @@ class StreamingTurnTests(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(orch._speaking)
         self.assertNotIn(AgentState.LISTEN, states)
 
+    async def test_ack_echo_heard_mid_reply_does_not_start_a_turn(self) -> None:
+        """Mic picks up our own "好的，" as "好" while the answer is playing (board, 14:16:58)."""
+        orch = object.__new__(Orchestrator)
+        orch._next_turn_id = 7
+        orch._active_turn_id = 7
+        orch._speaking = True
+        orch._turn_busy = False
+        orch._tts_abort = False
+        orch._active_tts_text = ""
+        orch._last_spoken_turn = ""
+        orch._last_ack_text = ""
+        orch._last_tts_end_at = 0.0
+        orch.state = AgentState.TTS
+        resets: list[int] = []
+        orch.tts_queue = type("Q", (), {"mark_utterance_start": lambda self, g: resets.append(g)})()
+        orch.set_state = lambda st: None  # type: ignore[method-assign]
+
+        class Session:
+            async def finalize_samples(self, samples):
+                return {"text": "好"}
+
+        orch._asr_session = Session()
+
+        async def must_not_run(*a, **k):
+            raise AssertionError("a filler heard mid-reply must not start a turn")
+
+        orch._run_llm = must_not_run  # type: ignore[method-assign]
+        await orch._process_turn({"duration_sec": 1.1, "samples": [0.0] * 17600})
+        self.assertEqual((orch._active_turn_id, resets, orch._speaking), (7, [], True))
+
     async def test_streaming_turn_never_reprompts_after_a_length_limited_segment(self) -> None:
         """The RKNN session restarts on a fresh prompt, so it must not be asked to "continue"."""
         orch = object.__new__(Orchestrator)

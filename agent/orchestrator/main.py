@@ -772,7 +772,9 @@ class Orchestrator:
                 LOG.info("[asr] normalized: %s", text)
                 recent_tts = self._speaking or (time.monotonic() - getattr(self, "_last_tts_end_at", 0.0) < 2.0)
                 cur_speak = (
-                    (getattr(self, "_active_tts_text", "") or "")
+                    (getattr(self, "_last_ack_text", "") or "")
+                    + " "
+                    + (getattr(self, "_active_tts_text", "") or "")
                     + " "
                     + (getattr(self, "_last_spoken_turn", "") or "")
                 ).strip()
@@ -782,6 +784,12 @@ class Orchestrator:
                         text,
                         cur_speak[:30],
                     )
+                    return
+                core = normalize_spoken_text(text)
+                if was_speaking and (len(core) <= 1 or set(core) <= set("啊嗯呃哦呀吧呵哈嘿好")):
+                    # "好"/"嗯" heard mid-reply is almost always our own ack/echo; starting a
+                    # turn for it would cancel the reply that is still being spoken.
+                    LOG.info("[asr] ignored filler while speaking: %s", text)
                     return
                 self._next_turn_id += 1
                 generation = self._next_turn_id
@@ -2023,6 +2031,7 @@ class Orchestrator:
         if not await self.tts_queue.enqueue_wav(phrase, wav, generation=generation):
             return False
         self._speaking = True
+        self._last_ack_text = phrase
         LOG.info("[llm] ack before answer: %s", phrase)
         await self.emit({"type": "tts_sentence", "text": phrase})
         return True
