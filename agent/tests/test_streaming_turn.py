@@ -280,6 +280,51 @@ class StreamingTurnTests(unittest.IsolatedAsyncioTestCase):
         self.assertNotIn("secret", "".join(event["text"] for event in token_events))
         self.assertTrue(any(event["type"] == "latency" for event in events))
 
+    async def test_streaming_turn_drops_closing_filler_but_keeps_first_sentence(self) -> None:
+        orch = object.__new__(Orchestrator)
+        orch._chat_turns = []
+        orch.history_idle_clear_sec = 0
+        orch.history_max_turns = 0
+        orch.system_prompt = ""
+        orch.socket_path = "/ignored"
+        orch.max_new_tokens = 64
+        orch._tts_abort = False
+        orch._active_turn_id = 9
+        orch._active_tts_text = ""
+        orch._last_spoken_turn = ""
+        orch._last_tts_end_at = 0.0
+        orch._listen_cooldown_until = 0.0
+        orch.listen_cooldown_sec = 0.2
+        orch._paused_relay_text = None
+        orch._current_splitter = None
+        orch._speaking = False
+        orch.state = AgentState.LLM
+        orch.tts_queue = FakeTtsQueue()
+
+        async def emit(event: dict) -> None:
+            return None
+
+        async def prepare() -> None:
+            return None
+
+        orch.emit = emit  # type: ignore[method-assign]
+        orch._prepare_llm_call = prepare  # type: ignore[method-assign]
+        orch.set_state = lambda state: None  # type: ignore[method-assign]
+
+        # Reply seen on the board: the answer, then a "need anything else" tail.
+        def fake_stream(prompt: str, on_token, **kwargs):
+            for piece in ("主人，十五乘四等于六十。", "需要我再解释一下计算过程吗？"):
+                on_token(piece)
+            return {"text": "主人，十五乘四等于六十。需要我再解释一下计算过程吗？", "ttft_s": 0.01}
+
+        with patch("orchestrator.main.llm_chat_stream", fake_stream):
+            await orch._run_llm("十五乘四是多少", generation=9, vad_end_at=time.monotonic())
+
+        spoken = "".join(text for text, _ in orch.tts_queue.enqueued)
+        self.assertIn("六十", spoken)
+        self.assertNotIn("需要我", spoken)
+        self.assertNotIn("需要我", orch._last_spoken_turn)
+
     async def test_streaming_turn_never_reprompts_after_a_length_limited_segment(self) -> None:
         """The RKNN session restarts on a fresh prompt, so it must not be asked to "continue"."""
         orch = object.__new__(Orchestrator)

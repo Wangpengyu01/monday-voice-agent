@@ -106,6 +106,23 @@ def sanitize_tts_text(text: str) -> str:
     return text.strip()
 
 
+# 回答结尾的客服式套话。4B 模型不太听提示词，只能在播报前按句过滤（首句永远保留）。
+_CLOSING_FILLER = re.compile(
+    r"^(?:如果|若是?|假如|如)[^。！？]{0,4}(?:还有|有任何|有其他|有别的|还需要|需要|有)[^。！？]{0,14}(?:问题|疑问|需要|帮助|解释|了解|吩咐)"
+    r"|^(?:主人|您|你)?(?:还有|有任何|有其他|有别的)[^。！？]{0,10}(?:问题|疑问)"
+    r"|(?:请|欢迎)?随时(?:告诉|吩咐|叫|找|问|联系)"
+    r"|有什么(?:我|小揽)?(?:可以|能)?(?:帮|为|效劳)[^。！？]{0,8}(?:吗|呢)"
+    r"|^(?:还)?需要我[^。！？]{0,16}吗"
+    r"|^还有(?:什么|其他|别的)[^。！？]{0,10}(?:吗|呢)"
+    r"|^希望(?:这|以上|我的)[^。！？]{0,12}(?:帮助|有用|帮到)"
+)
+
+
+def is_closing_filler(text: str) -> bool:
+    t = (text or "").strip("，,。！？!? ")
+    return bool(t) and len(t) <= 32 and bool(_CLOSING_FILLER.search(t))
+
+
 def is_speakable(text: str) -> bool:
     return len(re.findall(r"[\u4e00-\u9fff0-9]", text)) >= _MIN_SPOKEN_CHARS
 

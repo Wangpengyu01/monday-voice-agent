@@ -56,6 +56,7 @@ from tts.sentence_split import (
     StreamingSentenceSplitter,
     canned_reply_for,
     clean_llm_reply,
+    is_closing_filler,
     extract_speak_sentences,
     is_echo_reply,
     is_self_echo,
@@ -1843,6 +1844,9 @@ class Orchestrator:
                     if is_echo_reply(user_prompt, chunk):
                         LOG.warning("[llm] suppressed echo chunk: %s", chunk)
                         continue
+                    if int(tts_state["n"]) > 0 and is_closing_filler(chunk):
+                        LOG.info("[llm] dropped closing filler: %s", chunk)
+                        continue
                     queued = await self._enqueue_speak(chunk, tts_state, generation=generation)
                     if queued:
                         await self.emit({"type": "llm_token", "text": chunk})
@@ -1860,6 +1864,9 @@ class Orchestrator:
                 for chunk in splitter.finish():
                     if is_echo_reply(user_prompt, chunk):
                         LOG.warning("[llm] suppressed echo chunk: %s", chunk)
+                        continue
+                    if int(tts_state["n"]) > 0 and is_closing_filler(chunk):
+                        LOG.info("[llm] dropped closing filler: %s", chunk)
                         continue
                     queued = await self._enqueue_speak(chunk, tts_state, generation=generation)
                     if queued:
