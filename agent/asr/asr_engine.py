@@ -98,6 +98,9 @@ class _StreamingParaformerBackend:
             chunk = max(1, int(sample_rate * 0.2))
             for i in range(0, len(buf), chunk):
                 self.recognizer.feed(buf[i : i + chunk], sample_rate)
+            pad = int(sample_rate * getattr(getattr(self.recognizer, "cfg", None), "final_tail_pad_sec", 0.0))
+            if pad > 0:
+                self.recognizer.feed([0.0] * pad, sample_rate)
         return self.recognizer.finalize().strip()
 
 

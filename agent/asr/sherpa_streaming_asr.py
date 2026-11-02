@@ -41,8 +41,11 @@ class _OnlineModelConfig(ctypes.Structure):
         ("zipformer2_ctc", _OnlineZipformer2CtcModelConfig),
         ("tokens", ctypes.c_char_p),
         ("num_threads", ctypes.c_int32),
-        ("debug", ctypes.c_int32),
+        # c-api.h v1.12.8: provider comes before debug here (unlike the TTS model
+        # config). The old debug/provider order made this struct 8 bytes short, so
+        # every later field was misread and the C side read past the end.
         ("provider", ctypes.c_char_p),
+        ("debug", ctypes.c_int32),
         ("model_type", ctypes.c_char_p),
         ("modeling_unit", ctypes.c_char_p),
         ("bpe_vocab", ctypes.c_char_p),
@@ -128,6 +131,10 @@ class StreamingParaformerConfig:
     num_threads: int = 2
     sample_rate: int = 16000
     feature_dim: int = 80
+    # Silence fed before InputFinished on the final pass. The streaming model needs
+    # look-ahead frames to emit the last characters; without it "黑洞是怎么形成的"
+    # came out as "黑洞是怎么". sherpa-onnx examples use 0.66s; >=0.3s was enough here.
+    final_tail_pad_sec: float = 0.5
 
 
 class StreamingParaformerRecognizer:

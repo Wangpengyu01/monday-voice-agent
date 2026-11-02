@@ -81,6 +81,8 @@ asr:
   tokens: tokens.txt
   sherpa_lib: /userdata/voice/sherpa-onnx-v1.12.8-linux-aarch64-shared-cpu/lib
   num_threads: 4
+  # 最终识别前补的静音秒数，让流式模型把最后几个字解出来（0 = 不补，会丢句尾）
+  final_tail_pad_sec: 0.5
   partial_interval_sec: 0.15
   partial_min_sec: 0.15
   partial_enabled: true

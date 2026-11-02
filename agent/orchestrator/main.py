@@ -253,6 +253,7 @@ class Orchestrator:
                     tokens=str(asr_cfg.get("tokens", "tokens.txt")),
                     num_threads=int(asr_cfg.get("num_threads", 2)),
                     sample_rate=int(vad_cfg.get("sample_rate", 16000)),
+                    final_tail_pad_sec=float(asr_cfg.get("final_tail_pad_sec", 0.5)),
                 ),
                 sample_rate=self.vad_config.sample_rate,
                 partial_interval_sec=float(asr_cfg.get("partial_interval_sec", 1.2)),
