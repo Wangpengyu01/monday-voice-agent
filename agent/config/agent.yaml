@@ -27,11 +27,15 @@ inference:
   # vlm_daemon (P5b) | llm_daemon (LLM-only legacy)
   backend: llm_daemon
 
-# Audio I/O: auto picks FY-SP701 USB when plugged, else board ES8388
+# Audio I/O: board = 板载 ES8388 麦克风（原程序方案，开机不等 USB 麦克风）
+#            auto  = 先等 FY-SP701 USB 麦克风最多 45s，没有再用板载
 audio:
-  default_profile: auto
+  default_profile: board
   settings_path: /userdata/agent/run/user_settings.json
   profiles:
+    board:
+      # 与原程序一致（vad.mic_capture_gain / AGENT_MIC_CAPTURE_GAIN=8）
+      mic_capture_gain: 8
     fy_sp701:
       usb_mic_volume: 20000
       vad:

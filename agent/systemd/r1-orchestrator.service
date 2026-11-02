@@ -15,7 +15,6 @@ Environment=AGENT_MIC_CAPTURE_GAIN=8
 WorkingDirectory=/userdata/agent
 ExecStartPre=+/bin/bash /userdata/agent/scripts/fix_llm_sock_perms.sh /tmp/r1-llm.sock 90
 ExecStartPre=/bin/bash /userdata/agent/scripts/orchestrator_wait_infer_sock.sh
-ExecStartPre=/bin/bash /userdata/agent/scripts/wait_fy_sp701.sh
 ExecStartPre=-/bin/bash /userdata/voice/scripts/voice_hw_board.sh
 ExecStartPre=-/bin/bash -c 'chown -R youyeetoo:youyeetoo /userdata/agent/ui 2>/dev/null; find /userdata/agent/run -maxdepth 1 -user root -exec chown youyeetoo:youyeetoo {} + 2>/dev/null; true'
 ExecStart=/usr/bin/python3 -m orchestrator.main --config /userdata/agent/config/agent.yaml --agent-root /userdata/agent
