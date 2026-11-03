@@ -17,6 +17,8 @@ class TitleCommandTests(unittest.TestCase):
             "叫我阿杰": "阿杰",
             "管我叫大哥好了": "大哥",
             "别叫我主人了，叫我老板": "老板",
+            "以后还是叫我主人吧": "主人",
+            "还是叫我王哥吧": "王哥",
         }
         for q, want in cases.items():
             self.assertEqual(parse_title_command(q), want, q)
