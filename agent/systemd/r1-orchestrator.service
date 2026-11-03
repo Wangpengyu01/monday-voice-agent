@@ -8,6 +8,8 @@ Type=simple
 User=youyeetoo
 Group=youyeetoo
 SupplementaryGroups=audio
+# teacher model key (DEEPSEEK_API_KEY=...), kept outside the deployed tree; optional
+EnvironmentFile=-/userdata/secrets/deepseek.env
 Environment=AGENT_ROOT=/userdata/agent
 Environment=PYTHONPATH=/userdata/agent
 Environment=LD_LIBRARY_PATH=/userdata/voice/sherpa-onnx-v1.12.8-linux-aarch64-shared-cpu/lib

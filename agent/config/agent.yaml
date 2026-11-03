@@ -13,6 +13,21 @@ system_prompt: |
 # （和 Qwen3-TTS 同在 RK1828 上，1024 放不下），系统提示（含语音设置和当前时间）约占四百 token，
 # 加上本上限仍在上下文以内。到上限时程序会补一句提示，不会半句断掉。
 max_new_tokens: 200
+# 不会就问：本地模型答不了的（查事实、讲道理、时效信息、主人的个人信息、纠错）交给老师模型，
+# 老师的回答说出来的同时整理成记忆，下次本地直接答。API key 不写在这里，放在 /userdata/secrets/deepseek.env
+# （DEEPSEEK_API_KEY=...），由 r1-orchestrator 服务加载；没有 key 时全部由本地模型回答。
+teacher:
+  enabled: true
+  provider: deepseek
+  base_url: https://api.deepseek.com
+  model: deepseek-flash
+  api_key_env: DEEPSEEK_API_KEY
+  timeout_s: 20
+  max_tokens: 400
+learning:
+  db: /userdata/agent/run/learning/memory.db
+  # 每条老师问答按对话格式追加在这里，攒够了可以拿去给本地模型训练 LoRA
+  lora_log: /userdata/agent/run/learning/lora_data.jsonl
 dialog:
   # 对用户的称呼；也可以直接说“以后叫我王哥”来改（保存在 run/ 下的用户设置里，优先于这里）
   user_title: 主人

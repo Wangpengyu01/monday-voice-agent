@@ -47,6 +47,9 @@ from llm.client import LlmUnavailableError, llm_chat_stream, llm_clear_history, 
 from orchestrator.quick_reply import ACK_GROUPS, ACK_PHRASES, ack_for, ack_kind, quick_reply_for, strip_leading_ack
 from orchestrator.user_title import DEFAULT_TITLE, apply_title, parse_title_command
 from orchestrator import selftest
+from learning.brain import MEMO_MARK, Learner, MemoFilter, is_correction, parse_memo, route, teacher_system
+from learning.memory import MemoryStore
+from learning.teacher import DeepSeekTeacher, TeacherUnavailable
 from orchestrator.config_loader import load_yaml
 from orchestrator.dialogue_policy import (
     can_barge_in,
@@ -306,6 +309,20 @@ class Orchestrator:
         self.ack_enabled = str(dialog_cfg.get("ack_before_answer", "true")).lower() not in ("0", "false", "no")
         self._ack_cache: dict[str, Path] = {}
         self.system_prompt = (cfg.get("system_prompt") or "").strip()
+        # learning: local memory + a teacher model for what the local model can't answer
+        learn_cfg = cfg.get("learning") or {}
+        teach_cfg = cfg.get("teacher") or {}
+        self.memory = MemoryStore(learn_cfg.get("db", "/userdata/agent/run/learning/memory.db"))
+        self.learner = Learner(self.memory, Path(learn_cfg.get("lora_log", "/userdata/agent/run/learning/lora_data.jsonl")))
+        self.teacher_enabled = bool(teach_cfg.get("enabled", True))
+        self.teacher = DeepSeekTeacher(
+            base_url=str(teach_cfg.get("base_url", "https://api.deepseek.com")),
+            model=str(teach_cfg.get("model", "deepseek-flash")),
+            api_key_env=str(teach_cfg.get("api_key_env", "DEEPSEEK_API_KEY")),
+            timeout_s=float(teach_cfg.get("timeout_s", 20)),
+            max_tokens=int(teach_cfg.get("max_tokens", 400)),
+        )
+        self._last_qa: tuple[str, str] | None = None
         self._chat_turns: list[tuple[str, str]] = []
         self._llm_last_turn_at = 0.0
         self.voice_settings = VoiceSettingsManager.from_config(tts_cfg)
@@ -986,16 +1003,23 @@ class Orchestrator:
             f"{period}{h12}点{now.minute:02d}分。"
         )
 
-    def _build_llm_prompt(self, user_text: str) -> str:
-        prompt = ""
+    def _system_body(self, memory_ctx: str = "") -> str:
         sys_body = apply_title((self.system_prompt or "").strip(), getattr(self, "user_title", DEFAULT_TITLE), for_prompt=True)
         voice_block = self.voice_settings.describe_for_prompt() if hasattr(self, "voice_settings") and self.voice_settings else ""
         if voice_block:
             sys_body = f"{sys_body}\n\n{voice_block}".strip()
-        if sys_body:
-            # Prepend live datetime so model can answer time/date questions correctly
-            datetime_line = self._datetime_context()
-            prompt += f"<|im_start|>system\n{datetime_line}\n{sys_body}<|im_end|>\n"
+        if memory_ctx:
+            sys_body = f"{sys_body}\n\n{apply_title(memory_ctx, getattr(self, 'user_title', DEFAULT_TITLE), for_prompt=True)}"
+        if not sys_body:
+            return ""
+        # Prepend live datetime so model can answer time/date questions correctly
+        return f"{self._datetime_context()}\n{sys_body}"
+
+    def _build_llm_prompt(self, user_text: str, memory_ctx: str = "") -> str:
+        prompt = ""
+        sys_text = self._system_body(memory_ctx)
+        if sys_text:
+            prompt += f"<|im_start|>system\n{sys_text}<|im_end|>\n"
         if self.history_max_turns > 0:
             for user, assistant in self._chat_turns[-self.history_max_turns :]:
                 prompt += f"<|im_start|>user\n{user.strip()}<|im_end|>\n<|im_start|>assistant\n{assistant.strip()}<|im_end|>\n"
@@ -1923,12 +1947,32 @@ class Orchestrator:
                 return
 
 
+        learn_route = None
+        memory_ctx = ""
+        memory = getattr(self, "memory", None)  # absent when the learning layer is not set up
+        if not is_companion and memory is not None:
+            correction = bool(getattr(self, "_last_qa", None)) and is_correction(user_prompt)
+            mem_hit = None if correction else await asyncio.to_thread(memory.best_answer, user_prompt)
+            teacher = getattr(self, "teacher", None)
+            learn_route = route(
+                user_prompt, ack_kind(user_prompt),
+                teacher_ok=bool(getattr(self, "teacher_enabled", False) and teacher and teacher.available),
+                memory_answer=mem_hit.answer if mem_hit else "", correction=correction,
+            )
+            LOG.info("[learn] route=%s (%s)", learn_route.who, learn_route.reason)
+            if learn_route.who == "memory":
+                await self._speak_turn(learn_route.memory_answer, generation=generation)
+                self._record_chat_turn(user_prompt, learn_route.memory_answer)
+                self._last_qa = (user_prompt, learn_route.memory_answer)
+                return
+            memory_ctx = await asyncio.to_thread(memory.context_for, user_prompt)
+
         ack_played = False
         if not is_companion and getattr(self, "ack_enabled", False):
             ack_played = await self._play_ack(user_prompt, generation=generation)
 
         await self._prepare_llm_call()
-        prompt = self._build_llm_prompt(user_prompt)
+        prompt = self._build_llm_prompt(user_prompt, memory_ctx)
         LOG.info(
             "[llm] hist=%d/%d prompt %d chars · user=%s",
             len(self._chat_turns),
@@ -1949,15 +1993,40 @@ class Orchestrator:
 
         try:
             reply_parts: list[str] = []
-            llm_task = asyncio.create_task(
-                asyncio.to_thread(
-                    llm_chat_stream,
-                    prompt,
-                    on_token,
-                    sock_path=self.socket_path,
-                    max_new_tokens=self.max_new_tokens,
-                )
-            )
+            use_teacher = learn_route is not None and learn_route.who == "teacher"
+            memo_filter = MemoFilter()
+            teacher_q, teacher_wrong = user_prompt, ""
+            persona_system = self._system_body(memory_ctx)
+
+            def run_local() -> dict:
+                return llm_chat_stream(prompt, on_token, sock_path=self.socket_path, max_new_tokens=self.max_new_tokens)
+
+            if use_teacher:
+                teacher_user = user_prompt
+                if learn_route.reason == "correction" and self._last_qa:
+                    teacher_q, teacher_wrong = self._last_qa
+                    teacher_user = (f"刚才主人问：{teacher_q}\n你回答：{teacher_wrong}\n主人说：{user_prompt}\n"
+                                    "请直接给主人正确的答案。记忆卡片里的 q 写原来的问题。")
+
+                def on_teacher_token(piece: str) -> None:
+                    out = memo_filter.feed(piece)
+                    if out:
+                        on_token(out)
+
+                def run_teacher() -> dict:
+                    try:
+                        text = self.teacher.stream(teacher_system(persona_system, ""), teacher_user, on_teacher_token)
+                    except TeacherUnavailable as exc:
+                        LOG.warning("[learn] teacher unavailable (%s), local model answers", exc)
+                        return dict(run_local(), teacher=False)
+                    tail = memo_filter.finish()
+                    if tail:
+                        on_token(tail)
+                    return {"text": text.split(MEMO_MARK)[0], "teacher": True}
+
+                llm_task = asyncio.create_task(asyncio.to_thread(run_teacher))
+            else:
+                llm_task = asyncio.create_task(asyncio.to_thread(run_local))
             while not llm_task.done() or not token_queue.empty():
                 try:
                     piece = await asyncio.wait_for(token_queue.get(), timeout=0.04)
@@ -2024,6 +2093,19 @@ class Orchestrator:
                     await self._enqueue_speak(trail_cue, tts_state, generation=generation)
 
             full = clean_llm_reply(user_prompt, "".join(reply_parts))
+            if not is_companion and full and memory is not None:
+                self._last_qa = (user_prompt, full)
+            if use_teacher and reply.get("teacher") and full:
+                memo = parse_memo(memo_filter.memo)
+                try:
+                    await asyncio.to_thread(
+                        self.learner.learn, teacher_q, full, memo,
+                        system=self._system_body(), wrong=teacher_wrong,
+                    )
+                    LOG.info("[learn] learned from teacher: remember=%s facts=%s memo_q=%s",
+                             memo.get("remember"), memo.get("facts"), str(memo.get("q", ""))[:30])
+                except Exception as exc:  # learning must never break the turn
+                    LOG.warning("[learn] failed to store: %s", exc)
 
             if hasattr(self, "voice_settings") and self.voice_settings:
                 full, _settings_applied = self.voice_settings.parse_and_strip_llm_tag(full)
