@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import re
 import hashlib
 import json
 import logging
@@ -45,6 +46,7 @@ from asr.vad_stream import VadConfig, VadStream
 from llm.client import LlmUnavailableError, llm_chat_stream, llm_clear_history, llm_ping
 from orchestrator.quick_reply import ACK_GROUPS, ACK_PHRASES, ack_for, ack_kind, quick_reply_for, strip_leading_ack
 from orchestrator.user_title import DEFAULT_TITLE, apply_title, parse_title_command
+from orchestrator import selftest
 from orchestrator.config_loader import load_yaml
 from orchestrator.dialogue_policy import (
     can_barge_in,
@@ -377,6 +379,42 @@ class Orchestrator:
                 "speed": rt.speed,
             }
         )
+
+    async def _selftest_report(self, *, full: bool) -> str:
+        tts_sock = None
+        engine = self.tts_queue.engine
+        if getattr(engine, "streaming", False):
+            tts_sock = engine.cfg.qwen3_socket
+        checks = await asyncio.to_thread(
+            selftest.run_checks, llm_sock=self.socket_path, llm_ping=llm_ping, tts_sock=tts_sock
+        )
+        for c in checks:
+            LOG.info("[selftest] %s: %s %s", c.name, "ok" if c.ok else "FAIL", c.problem or c.detail)
+        return selftest.announcement(checks, full=full)
+
+    async def _boot_selftest(self) -> None:
+        """Once per boot: wait for the models, check everything, say one sentence."""
+        marker = self.agent_root / "run" / "selftest_boot_id"
+        boot_id = selftest.current_boot_id()
+        try:
+            if boot_id and marker.is_file() and marker.read_text().strip() == boot_id:
+                return  # already announced this boot (service restarted by a deploy)
+        except OSError:
+            pass
+        text = await self._selftest_report(full=False)
+        try:
+            marker.write_text(boot_id + "\n")
+        except OSError:
+            pass
+        if self._turn_busy or self._speaking:
+            LOG.info("[selftest] busy, not announcing: %s", text)
+            return
+        self._next_turn_id += 1
+        generation = self._next_turn_id
+        self._active_turn_id = generation
+        self._tts_abort = False
+        self.tts_queue.mark_utterance_start(generation)
+        await self._speak_turn(text, generation=generation)
 
     def _apply_title(self, text: str) -> str:
         return apply_title(text, getattr(self, "user_title", DEFAULT_TITLE))
@@ -1833,6 +1871,12 @@ class Orchestrator:
 
             # Before the filler filter: normalize_spoken_text collapses "谢谢" to "谢",
             # which the single-char rule below would otherwise drop as noise.
+            if len(u_clean) <= 8 and re.search(r"自检|检查一下系统|系统检查", u_clean):
+                report = await self._selftest_report(full=True)
+                await self._speak_turn(report, generation=generation)
+                self._record_chat_turn(user_prompt, report)
+                return
+
             new_title = parse_title_command(user_prompt)
             if new_title is not None:
                 await self._set_user_title(new_title)
@@ -2128,6 +2172,7 @@ class Orchestrator:
         )
         await self.tts_queue.start()
         asyncio.create_task(self._warm_ack_cache())
+        asyncio.create_task(self._boot_selftest())
         try:
             if self.api_enabled:
                 try:

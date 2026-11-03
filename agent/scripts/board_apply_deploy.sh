@@ -14,7 +14,7 @@ NEW="${1:?usage: board_apply_deploy.sh <staged agent dir>}"
 AGENT=/userdata/agent
 BACKUPS=/userdata/backups
 USER_NAME=youyeetoo
-UNITS=(r1-llm-daemon r1-orchestrator r1-agent-ui r1-gpio-poweroff)
+UNITS=(r1-llm-daemon r1-orchestrator r1-agent-ui r1-gpio-poweroff r1-boot-chime)
 TTS_BIN=/userdata/qwen3tts/rknn_Qwen3_TTS_demo/rknn_qwen3_tts_daemon
 if [ -x "$TTS_BIN" ]; then
   UNITS+=(r1-tts-daemon)
