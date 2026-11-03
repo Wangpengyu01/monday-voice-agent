@@ -24,6 +24,7 @@ class NormalizeUserTextTests(unittest.TestCase):
         self.assertEqual(normalize_user_text("星期一"), "星期一")
         self.assertEqual(normalize_user_text("你好星期一"), "你好")
         self.assertEqual(normalize_user_text("嘿星期一几点了"), "几点了")
+        self.assertEqual(normalize_user_text("可以星期一几点"), "几点")
         # a bare leading 星期一 is the weekday, not a call by name
         self.assertEqual(normalize_user_text("星期一几点开会"), "星期一几点开会")
         self.assertEqual(normalize_user_text("嘿小揽今天星期几"), "今天星期几")

@@ -43,7 +43,9 @@ def normalize_user_text(text: str) -> str:
         return "你好"
     if re.match(r"^(?:你好|电好|男好|嘿|嗨|喂)?(?:小揽|星期一)[呀啊吧呢]?$", text):
         return "星期一"
-    m_name = re.match(r"^(?:(?:你好|电好|男好|嘿|嗨|喂)?小揽|(?:你好|电好|男好|嘿|嗨|喂)星期一)[，,、\s]*(.+)$", text)
+    m_name = re.match(
+        r"^(?:(?:你好|电好|男好|嘿|嗨|喂)?小揽|(?:你好|电好|男好|嘿|嗨|喂|可以|那个|哎|诶)星期一)[，,、\s]*(.+)$", text
+    )
     if m_name:
         text = m_name.group(1)
     text = _LEADING_JUNK.sub("", text)

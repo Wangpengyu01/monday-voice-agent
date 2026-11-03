@@ -401,7 +401,7 @@ class Orchestrator:
                 return  # already announced this boot (service restarted by a deploy)
         except OSError:
             pass
-        text = await self._selftest_report(full=False)
+        text = await self._selftest_report(full=True)
         try:
             marker.write_text(boot_id + "\n")
         except OSError:
@@ -415,6 +415,9 @@ class Orchestrator:
         self._tts_abort = False
         self.tts_queue.mark_utterance_start(generation)
         await self._speak_turn(text, generation=generation)
+        await self.tts_queue.wait_done(generation=generation)
+        if generation == self._active_turn_id and not self._turn_busy:
+            self.set_state(AgentState.LISTEN)
 
     def _apply_title(self, text: str) -> str:
         return apply_title(text, getattr(self, "user_title", DEFAULT_TITLE))
