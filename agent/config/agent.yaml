@@ -107,8 +107,8 @@ tts:
   sherpa_bin: /userdata/voice/sherpa-onnx-v1.12.8-linux-aarch64-shared-cpu/bin/sherpa-onnx-offline-tts
   sherpa_lib: /userdata/voice/sherpa-onnx-v1.12.8-linux-aarch64-shared-cpu/lib
   num_threads: 4
-  # xiaolan = Qwen3-TTS 常驻服务（r1-tts-daemon，RK1828 + RK3588 NPU）；baker 留作备用，选中才加载
-  default_voice: xiaolan
+  # beijing = Qwen3-TTS 常驻服务（r1-tts-daemon，RK1828 + RK3588 NPU）；baker 留作备用，选中才加载
+  default_voice: beijing
   qwen3_socket: /tmp/r1-tts.sock
   speed: 1.05
   speed_min: 0.7
@@ -118,8 +118,8 @@ tts:
   merge_max_chars: 80
   # 板上 /userdata/voice 只有 matcha-icefall-zh-baker；melo / wnj_male 要先把模型放上去再启用
   voices:
-    xiaolan:
-      label: 自然女声（Qwen3）
+    beijing:
+      label: 自然男声（Qwen3）
       backend: qwen3
       model_dir: /userdata/qwen3tts/rknn_Qwen3_TTS_demo/model
       default_speed: 1.0

@@ -11,7 +11,8 @@ Type=simple
 User=root
 Group=root
 WorkingDirectory=/userdata/qwen3tts/rknn_Qwen3_TTS_demo
-Environment=R1_TTS_SPEAKER=xiaolan
+# beijing: x-vector cloned from an early Qwen3 sample (voice_samples/4_qwen3tts_1828_GRQ版.wav); xiaolan = clone_2.wav
+Environment=R1_TTS_SPEAKER=beijing
 Environment=R1_TTS_FIRST=19
 Environment=R1_TTS_MIN_NEXT=19
 ExecStartPre=/bin/mkdir -p /userdata/agent/logs
