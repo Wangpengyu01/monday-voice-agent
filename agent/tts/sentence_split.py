@@ -142,6 +142,22 @@ def is_closing_filler(text: str) -> bool:
     return bool(t) and len(t) <= 32 and bool(_CLOSING_FILLER.search(t))
 
 
+def _cut_outside_word(buf: str, idx: int) -> int:
+    """Move a forced cut position out of an English word ("Operationa|l" -> before "Operational")."""
+    idx = min(idx, len(buf))
+
+    def in_word(ch: str) -> bool:  # letters plus the dots/hyphens/apostrophes of M.O.N.D.A.Y., don't
+        return ch.isascii() and (ch.isalpha() or ch in ".-'")
+
+    if idx <= 0 or idx >= len(buf) or not (in_word(buf[idx - 1]) and in_word(buf[idx])):
+        return idx
+    back = buf.rfind(" ", 0, idx)
+    if back >= 8:
+        return back + 1
+    fwd = buf.find(" ", idx)
+    return fwd + 1 if 0 <= fwd < idx + 24 else idx
+
+
 def is_speakable(text: str) -> bool:
     if _KEEP_LATIN and re.search(r"[A-Za-z]{2,}", text):
         return True
@@ -562,15 +578,16 @@ class StreamingSentenceSplitter:
                 continue
 
             # Fallback only when buffer exceeds 36 chars without ANY punctuation
-            if len(self._buf) >= 36:
+            # (English counts letters, so a mostly-Latin buffer may grow to 60 before it is cut)
+            latin = len(re.findall(r"[A-Za-z]", self._buf))
+            if len(self._buf) >= (60 if latin * 2 > len(self._buf) else 36):
                 m_con = re.search(r"(以及|并且|而且|但是|不过|然而|同时|因此|所以|包括|使得|导致)", self._buf[12:32])
                 if m_con:
                     split_idx = 12 + m_con.start()
-                    raw_chunk = self._buf[:split_idx].strip()
-                    self._buf = self._buf[split_idx:]
                 else:
-                    raw_chunk = self._buf[:26].strip()
-                    self._buf = self._buf[26:]
+                    split_idx = _cut_outside_word(self._buf, 26 if latin * 2 <= len(self._buf) else 48)
+                raw_chunk = self._buf[:split_idx].strip()
+                self._buf = self._buf[split_idx:]
                 clean = sanitize_tts_text(raw_chunk)
                 if is_speakable(clean):
                     clean += "，"
