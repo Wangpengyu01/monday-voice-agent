@@ -43,7 +43,7 @@ from asr.sense_voice import SenseVoiceConfig
 from asr.sherpa_streaming_asr import StreamingParaformerConfig
 from asr.vad_stream import VadConfig, VadStream
 from llm.client import LlmUnavailableError, llm_chat_stream, llm_clear_history, llm_ping
-from orchestrator.quick_reply import ACK_PHRASES, ack_for, quick_reply_for, strip_leading_ack
+from orchestrator.quick_reply import ACK_GROUPS, ACK_PHRASES, ack_for, ack_kind, quick_reply_for, strip_leading_ack
 from orchestrator.user_title import DEFAULT_TITLE, apply_title, parse_title_command
 from orchestrator.config_loader import load_yaml
 from orchestrator.dialogue_policy import (
@@ -2062,9 +2062,13 @@ class Orchestrator:
                 self._speaking = False
 
     async def _play_ack(self, user_text: str, *, generation: int) -> bool:
-        """Say "嗯，"/"好的，" from a cached clip right away, before the LLM answer."""
+        """Say a fitting ack ("好嘞，" / "我看看，" ...) from a cached clip right away, before the LLM answer."""
+        cache = getattr(self, "_ack_cache", {})
         phrase = ack_for(user_text)
-        wav = getattr(self, "_ack_cache", {}).get(phrase)
+        if phrase not in cache:
+            # that clip failed to synthesize: use another cached phrase of the same kind
+            phrase = next((p for p in ACK_GROUPS[ack_kind(user_text)] if p in cache), phrase)
+        wav = cache.get(phrase)
         if wav is None or self._tts_abort or generation != self._active_turn_id:
             return False
         if not await self.tts_queue.enqueue_wav(phrase, wav, generation=generation):
