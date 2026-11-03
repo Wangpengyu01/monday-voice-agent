@@ -18,6 +18,7 @@ class UserSettings:
     usb_mic_volume: int | None = None
     speaker_volume: int | None = None
     vad: dict[str, Any] = field(default_factory=dict)
+    user_title: str | None = None  # how the assistant addresses the user; "" = no address
 
 
 class UserSettingsStore:
@@ -41,6 +42,7 @@ class UserSettingsStore:
             usb_mic_volume=int(raw["usb_mic_volume"]) if raw.get("usb_mic_volume") is not None else None,
             speaker_volume=int(raw["speaker_volume"]) if raw.get("speaker_volume") is not None else None,
             vad=dict(vad) if isinstance(vad, dict) else {},
+            user_title=str(raw["user_title"]) if isinstance(raw.get("user_title"), str) else None,
         )
 
     def save(self, settings: UserSettings) -> None:
@@ -63,6 +65,8 @@ class UserSettingsStore:
             data["usb_mic_volume"] = settings.usb_mic_volume
         if settings.speaker_volume is not None:
             data["speaker_volume"] = settings.speaker_volume
+        if settings.user_title is not None:
+            data["user_title"] = settings.user_title
         if settings.vad:
             prev_vad = data.get("vad") if isinstance(data.get("vad"), dict) else {}
             merged_vad = dict(prev_vad)
@@ -88,6 +92,8 @@ class UserSettingsStore:
             current.usb_mic_volume = int(updates["usb_mic_volume"])
         if "speaker_volume" in updates and updates["speaker_volume"] is not None:
             current.speaker_volume = int(updates["speaker_volume"])
+        if "user_title" in updates and updates["user_title"] is not None:
+            current.user_title = str(updates["user_title"]).strip()
         if "vad" in updates and isinstance(updates["vad"], dict):
             merged = dict(current.vad)
             merged.update(updates["vad"])

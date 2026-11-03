@@ -5,6 +5,7 @@ import asyncio
 import logging
 import os
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -59,6 +60,8 @@ class TtsQueue:
         # chunk streams are forwarded to _wav_q strictly in enqueue order
         self._sources: asyncio.Queue = asyncio.Queue()
         self._forward_task: asyncio.Task | None = None
+        # applied to every spoken text (the orchestrator swaps "主人" for the user's title here)
+        self.text_filter: Callable[[str], str] | None = None
 
     @property
     def is_playing(self) -> bool:
@@ -157,6 +160,8 @@ class TtsQueue:
         generation = self._active_generation if generation is None else generation
         if self._interrupted.is_set() or generation != self._active_generation:
             return
+        if self.text_filter is not None:
+            text = self.text_filter(text)
         text = sanitize_tts_text(text)
         text = fix_tts_pronunciation(text)
         if not is_speakable(text):

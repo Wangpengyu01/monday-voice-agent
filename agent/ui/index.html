@@ -841,6 +841,7 @@
 
     // State Variables
     let ws = null;
+    let userTitle = "主人";  // how the assistant addresses the user (settings / "以后叫我…")
     let currentState = "IDLE";
     let activeAssistantMsgEl = null;
     let activeTokenSpan = null;
@@ -963,7 +964,7 @@
       const msgEl = document.createElement("div");
       msgEl.className = "chat-msg user";
       msgEl.innerHTML = `
-        <div class="msg-header">主人 · ${new Date().toLocaleTimeString()}</div>
+        <div class="msg-header">${escapeHtml(userTitle || "我")} · ${new Date().toLocaleTimeString()}</div>
         <div class="msg-bubble">${escapeHtml(text)}</div>
       `;
       chatBox.appendChild(msgEl);
@@ -1056,6 +1057,7 @@
         wsDot.className = "status-dot active";
         wsText.textContent = "已连接服务";
         sendWs({ type: "get_status" });
+        sendWs({ type: "settings_get" });
       };
 
       ws.onclose = () => {
@@ -1080,6 +1082,14 @@
         switch (msg.type) {
           case "state":
             updateState(msg.value);
+            break;
+
+          case "user_title":
+            userTitle = msg.value;
+            break;
+
+          case "settings_snapshot":
+            if (typeof msg.user_title === "string") userTitle = msg.user_title;
             break;
 
           case "asr_final":
@@ -1218,7 +1228,7 @@
       chatBox.innerHTML = `
         <div class="chat-msg assistant">
           <div class="msg-header">小揽 · 提示</div>
-          <div class="msg-bubble">对话记录已清空。随时待命，主人请吩咐。</div>
+          <div class="msg-bubble">对话记录已清空。随时待命${userTitle ? "，" + escapeHtml(userTitle) : ""}请吩咐。</div>
         </div>
       `;
       activeAssistantMsgEl = null;

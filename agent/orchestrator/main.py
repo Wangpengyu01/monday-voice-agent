@@ -44,6 +44,7 @@ from asr.sherpa_streaming_asr import StreamingParaformerConfig
 from asr.vad_stream import VadConfig, VadStream
 from llm.client import LlmUnavailableError, llm_chat_stream, llm_clear_history, llm_ping
 from orchestrator.quick_reply import ACK_PHRASES, ack_for, quick_reply_for, strip_leading_ack
+from orchestrator.user_title import DEFAULT_TITLE, apply_title, parse_title_command
 from orchestrator.config_loader import load_yaml
 from orchestrator.dialogue_policy import (
     can_barge_in,
@@ -293,6 +294,11 @@ class Orchestrator:
         self.history_max_turns = int(cfg.get("history_max_turns", 4))
         self.history_idle_clear_sec = float(cfg.get("history_idle_clear_sec", 600))
         dialog_cfg = cfg.get("dialog") or {}
+        self.user_title = (
+            saved_user.user_title
+            if saved_user.user_title is not None
+            else str(dialog_cfg.get("user_title", DEFAULT_TITLE))
+        )
         self.quick_reply_enabled = str(dialog_cfg.get("quick_reply", "true")).lower() not in ("0", "false", "no")
         self.ack_enabled = str(dialog_cfg.get("ack_before_answer", "true")).lower() not in ("0", "false", "no")
         self._ack_cache: dict[str, Path] = {}
@@ -310,6 +316,7 @@ class Orchestrator:
             tts_engine,
             merge_max_chars=int(tts_cfg.get("merge_max_chars", 40)),
         )
+        self.tts_queue.text_filter = self._apply_title
         self.vad_stream = VadStream(self.vad_config, self.vad_queue)
         self.debug_audio = DebugAudioController(self)
         self._loop: asyncio.AbstractEventLoop | None = None
@@ -368,7 +375,18 @@ class Orchestrator:
             }
         )
 
+    def _apply_title(self, text: str) -> str:
+        return apply_title(text, getattr(self, "user_title", DEFAULT_TITLE))
+
+    async def _set_user_title(self, title: str) -> None:
+        self.user_title = title
+        self.user_settings.patch({"user_title": title})
+        LOG.info("[dialog] user title -> %r", title)
+        await self.emit({"type": "user_title", "value": title})
+
     async def emit(self, event: dict[str, Any]) -> None:
+        if isinstance(event.get("text"), str) and event.get("type") not in ("asr_partial", "asr_final"):
+            event = {**event, "text": self._apply_title(event["text"])}
         await self.event_bus.publish(event)
 
     def set_state(self, new: AgentState) -> None:
@@ -534,6 +552,7 @@ class Orchestrator:
                 "speech_tail_pad_ms": self.vad_config.speech_tail_pad_ms,
             },
             "can_change_audio": self._can_hot_swap_audio(),
+            "user_title": self.user_title,
         }
 
     async def _apply_settings_patch(self, patch: dict[str, Any]) -> None:
@@ -579,6 +598,9 @@ class Orchestrator:
                         "play_script": self.audio_profile.active.play_script,
                     }
                 )
+
+        if "user_title" in patch and patch["user_title"] is not None:
+            await self._set_user_title(str(patch["user_title"]).strip()[:8])
 
         if "usb_mic_volume" in patch and patch["usb_mic_volume"] is not None:
             vol = max(0, min(24660, int(patch["usb_mic_volume"])))
@@ -922,7 +944,7 @@ class Orchestrator:
 
     def _build_llm_prompt(self, user_text: str) -> str:
         prompt = ""
-        sys_body = (self.system_prompt or "").strip()
+        sys_body = apply_title((self.system_prompt or "").strip(), getattr(self, "user_title", DEFAULT_TITLE), for_prompt=True)
         voice_block = self.voice_settings.describe_for_prompt() if hasattr(self, "voice_settings") and self.voice_settings else ""
         if voice_block:
             sys_body = f"{sys_body}\n\n{voice_block}".strip()
@@ -1808,6 +1830,14 @@ class Orchestrator:
 
             # Before the filler filter: normalize_spoken_text collapses "谢谢" to "谢",
             # which the single-char rule below would otherwise drop as noise.
+            new_title = parse_title_command(user_prompt)
+            if new_title is not None:
+                await self._set_user_title(new_title)
+                reply = f"好的，{new_title}，以后就这么称呼您。" if new_title else "好的，以后不这么叫了。"
+                await self._speak_turn(reply, generation=generation)
+                self._record_chat_turn(user_prompt, reply)
+                return
+
             quick = quick_reply_for(u_clean) if getattr(self, "quick_reply_enabled", False) else None
             if quick:
                 LOG.info("[llm] quick reply (skip LLM): %s", quick)
