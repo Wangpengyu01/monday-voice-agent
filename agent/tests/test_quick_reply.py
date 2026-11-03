@@ -5,7 +5,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from orchestrator.quick_reply import ack_for, quick_reply_for, strip_leading_ack  # noqa: E402
+import random  # noqa: E402
+
+from orchestrator.quick_reply import ACK_GROUPS, ack_for, ack_kind, quick_reply_for, strip_leading_ack  # noqa: E402
 
 NOW = datetime.datetime(2026, 11, 2, 13, 53)  # Monday
 
@@ -40,11 +42,31 @@ class QuickReplyTests(unittest.TestCase):
 
 
 class AckTests(unittest.TestCase):
-    def test_ack_choice(self) -> None:
-        self.assertEqual(ack_for("推荐一部适合周末看的电影"), "好的，")
-        self.assertEqual(ack_for("帮我想个名字"), "好的，")
-        self.assertEqual(ack_for("天为什么是蓝色的"), "我想想，")
-        self.assertEqual(ack_for("十五乘四是多少"), "嗯，")
+    def test_ack_fits_what_was_said(self) -> None:
+        cases = {
+            "推荐一部适合周末看的电影": "request",
+            "帮我把音量调大一点": "request",
+            "给我讲个笑话吧": "request",
+            "帮我放首开心的歌": "request",
+            "从北京到上海有多远": "lookup",
+            "明天天气怎么样": "lookup",
+            "十五乘四是多少": "lookup",
+            "天为什么是蓝色的": "explain",
+            "你觉得我该换手机吗": "explain",
+            "我今天好累啊": "comfort",
+            "能不能安慰我一下，我好难过": "comfort",
+            "我考上研究生了": "cheer",
+            "今天过得还行": "chat",
+        }
+        for q, kind in cases.items():
+            self.assertEqual(ack_kind(q), kind, q)
+            self.assertIn(ack_for(q, random.Random(0)), ACK_GROUPS[kind], q)
+
+    def test_ack_does_not_repeat_back_to_back(self) -> None:
+        rng = random.Random(1)
+        picks = [ack_for("帮我想个名字", rng) for _ in range(20)]
+        self.assertTrue(all(a != b for a, b in zip(picks, picks[1:])), picks)
+        self.assertGreater(len(set(picks)), 1)
 
     def test_strip_models_own_ack(self) -> None:
         self.assertEqual(strip_leading_ack("好的，主人。"), "")
@@ -52,6 +74,7 @@ class AckTests(unittest.TestCase):
         self.assertEqual(strip_leading_ack("嗯，这个问题很有意思。"), "这个问题很有意思。")
         self.assertEqual(strip_leading_ack("好莱坞电影很多。"), "好莱坞电影很多。")
         self.assertEqual(strip_leading_ack("主人，十五乘四等于六十。"), "主人，十五乘四等于六十。")
+        self.assertEqual(strip_leading_ack("让我看看，北京到上海大约一千二百公里。"), "北京到上海大约一千二百公里。")
 
 
 if __name__ == "__main__":

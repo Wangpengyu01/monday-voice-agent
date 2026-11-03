@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import hashlib
 import json
 import logging
 import os
@@ -2053,8 +2054,10 @@ class Orchestrator:
         cache_dir = self.agent_root / "run" / "ack_cache"
         cache_dir.mkdir(parents=True, exist_ok=True)
         fresh: dict[str, Path] = {}
-        for i, phrase in enumerate(ACK_PHRASES):
-            path = cache_dir / f"ack_{tag}_{i}.wav"
+        for phrase in ACK_PHRASES:
+            # keyed by content, so editing the phrase list never maps a name to the wrong clip
+            digest = hashlib.md5(phrase.encode("utf-8")).hexdigest()[:8]
+            path = cache_dir / f"ack_{tag}_{digest}.wav"
             # sampling TTS (qwen3) can occasionally run on past the phrase: retry long clips
             max_sec = 0.6 + 0.3 * len(phrase)
             try:
