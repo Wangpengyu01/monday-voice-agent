@@ -14,7 +14,7 @@ NEW="${1:?usage: board_apply_deploy.sh <staged agent dir>}"
 AGENT=/userdata/agent
 BACKUPS=/userdata/backups
 USER_NAME=youyeetoo
-UNITS=(r1-llm-daemon r1-orchestrator r1-agent-ui r1-gpio-poweroff r1-boot-chime)
+UNITS=(r1-llm-daemon r1-orchestrator r1-agent-ui r1-gpio-poweroff r1-boot-chime r1-devices)
 TTS_BIN=/userdata/qwen3tts/rknn_Qwen3_TTS_demo/rknn_qwen3_tts_daemon
 if [ -x "$TTS_BIN" ]; then
   UNITS+=(r1-tts-daemon)
@@ -71,6 +71,12 @@ install -m 644 "$AGENT/systemd/r1-agent-logs.cron" /etc/cron.d/r1-agent-logs
 # 内核参数预留的 5 GB 大页没人用（RK1828 走 PCIe），开机还给系统；删掉这个文件即恢复
 install -m 644 "$AGENT/systemd/90-r1-free-hugepages.conf" /etc/sysctl.d/
 sysctl -q -p /etc/sysctl.d/90-r1-free-hugepages.conf || true
+# device vault key: made once on the board, root-only, never in the repo (losing it loses the stored passwords)
+install -d -m 700 /userdata/secrets
+if [ ! -s /userdata/secrets/vault.env ]; then
+  (umask 077; python3 -c 'from cryptography.fernet import Fernet; print("R1_VAULT_KEY=" + Fernet.generate_key().decode())' \
+    > /userdata/secrets/vault.env)
+fi
 install -d -o "$USER_NAME" -g "$USER_NAME" "/home/$USER_NAME/.config/autostart"
 install -m 644 -o "$USER_NAME" -g "$USER_NAME" \
   "$AGENT/scripts/xiaolan-gui-autostart.desktop" "/home/$USER_NAME/.config/autostart/"

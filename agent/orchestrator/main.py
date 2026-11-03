@@ -50,6 +50,7 @@ from orchestrator import selftest
 from learning.brain import MEMO_MARK, Learner, MemoFilter, is_correction, parse_memo, route, teacher_system
 from learning.memory import MemoryStore
 from learning.teacher import DeepSeekTeacher, TeacherUnavailable
+from devices.voice import DeviceAgent, parse_command as parse_device_command
 from orchestrator.config_loader import load_yaml
 from orchestrator.dialogue_policy import (
     can_barge_in,
@@ -323,6 +324,12 @@ class Orchestrator:
             max_tokens=int(teach_cfg.get("max_tokens", 400)),
         )
         self._last_qa: tuple[str, str] | None = None
+        # devices at home: LAN scan, names, encrypted accounts (entered on the :8767 page)
+        try:
+            self.devices = DeviceAgent((cfg.get("devices") or {}).get("run_dir", "/userdata/agent/run/devices"))
+        except Exception as exc:  # the voice assistant must come up even if this part can't
+            LOG.warning("[devices] disabled: %s", exc)
+            self.devices = None
         self._chat_turns: list[tuple[str, str]] = []
         self._llm_last_turn_at = 0.0
         self.voice_settings = VoiceSettingsManager.from_config(tts_cfg)
@@ -1898,6 +1905,22 @@ class Orchestrator:
 
             # Before the filler filter: normalize_spoken_text collapses "谢谢" to "谢",
             # which the single-char rule below would otherwise drop as noise.
+            device_cmd = parse_device_command(u_clean) if getattr(self, "devices", None) else None
+            if device_cmd:
+                LOG.info("[devices] command=%s", device_cmd)
+
+                async def say(text: str) -> None:
+                    await self._speak_turn(text, generation=generation)
+
+                try:
+                    reply = await self.devices.handle(device_cmd, say)
+                except Exception as exc:
+                    LOG.warning("[devices] %s failed: %s", device_cmd, exc)
+                    reply = "哎呀，扫描出了点问题，等会儿再试试。"
+                await self._speak_turn(reply, generation=generation)
+                self._record_chat_turn(user_prompt, reply)
+                return
+
             if len(u_clean) <= 8 and re.search(r"自检|检查一下系统|系统检查", u_clean):
                 report = await self._selftest_report(full=True)
                 await self._speak_turn(report, generation=generation)

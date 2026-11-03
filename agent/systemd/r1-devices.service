@@ -1,0 +1,22 @@
+[Unit]
+Description=星期一 家里的设备页面 (HTTP 8767, LAN only: device list, names, encrypted accounts)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=youyeetoo
+Group=youyeetoo
+# vault key (R1_VAULT_KEY=...), root-only on disk; without it the page shows devices but can't store passwords
+EnvironmentFile=-/userdata/secrets/vault.env
+Environment=AGENT_ROOT=/userdata/agent
+Environment=PYTHONPATH=/userdata/agent
+WorkingDirectory=/userdata/agent
+ExecStart=/usr/bin/python3 -m devices.web
+StandardOutput=append:/userdata/agent/logs/devices.log
+StandardError=append:/userdata/agent/logs/devices.log
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

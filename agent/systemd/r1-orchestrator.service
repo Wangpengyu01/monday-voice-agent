@@ -10,6 +10,8 @@ Group=youyeetoo
 SupplementaryGroups=audio
 # teacher model key (DEEPSEEK_API_KEY=...), kept outside the deployed tree; optional
 EnvironmentFile=-/userdata/secrets/deepseek.env
+# device vault key (R1_VAULT_KEY=...), for operating devices with their stored accounts
+EnvironmentFile=-/userdata/secrets/vault.env
 Environment=AGENT_ROOT=/userdata/agent
 Environment=PYTHONPATH=/userdata/agent
 Environment=LD_LIBRARY_PATH=/userdata/voice/sherpa-onnx-v1.12.8-linux-aarch64-shared-cpu/lib
