@@ -15,6 +15,16 @@ WorkingDirectory=/userdata/qwen3tts/rknn_Qwen3_TTS_demo
 Environment=R1_TTS_SPEAKER=beijing
 Environment=R1_TTS_FIRST=19
 Environment=R1_TTS_MIN_NEXT=19
+# EOS only when it is already the top token (the old "within 4 logits" rescue clipped the last
+# syllable once the prefill bugs were fixed and the talker ends on its own again)
+Environment=R1_TTS_EOS_GAP=0
+# runaway safety nets only, set loose: pauses (e.g. between spelled-out letters "M O N D A Y")
+# repeat the same silence code and were taken for a loop at 10 frames / 2x text length
+Environment=R1_TTS_DRIFT_WIN=16
+Environment=R1_TTS_DRIFT_DISTINCT=2
+Environment=R1_TTS_DRIFT_RATIO=4
+Environment=R1_TTS_EOS_START=8
+Environment=R1_TTS_EOS_CAP=12
 ExecStartPre=/bin/mkdir -p /userdata/agent/logs
 # chunk WAVs are written here by root and deleted by the orchestrator (youyeetoo)
 ExecStartPre=/usr/bin/install -d -o youyeetoo -g youyeetoo /userdata/agent/run/tts
