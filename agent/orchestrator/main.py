@@ -389,7 +389,7 @@ class Orchestrator:
             selftest.run_checks, llm_sock=self.socket_path, llm_ping=llm_ping, tts_sock=tts_sock
         )
         for c in checks:
-            LOG.info("[selftest] %s: %s %s", c.name, "ok" if c.ok else "FAIL", c.problem or c.detail)
+            LOG.info("[selftest] %s: %s %s", c.name, "ok" if c.ok else "FAIL", c.detail if c.ok else c.problem)
         return selftest.announcement(checks, full=full)
 
     async def _boot_selftest(self) -> None:

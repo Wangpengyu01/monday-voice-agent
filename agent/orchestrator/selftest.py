@@ -66,18 +66,27 @@ def wait_tts(sock_path: str | None, timeout: float) -> Check:
         time.sleep(2)
 
 
-def check_mic() -> Check:
-    """The VAD keeps an arecord process open on the codec while listening."""
+def _arecord_running() -> bool:
     for pid in os.listdir("/proc"):
         if not pid.isdigit():
             continue
         try:
-            cmd = Path(f"/proc/{pid}/cmdline").read_bytes()
+            if Path(f"/proc/{pid}/cmdline").read_bytes().startswith(b"arecord"):
+                return True
         except OSError:
             continue
-        if cmd.startswith(b"arecord"):
-            return Check("麦克风", True)
-    return Check("麦克风", False, "麦克风没有在收音")
+    return False
+
+
+def check_mic(timeout: float = 20.0) -> Check:
+    """The VAD keeps an arecord process open on the codec while listening (it starts a few
+    seconds after the orchestrator, so wait a little)."""
+    deadline = time.monotonic() + timeout
+    while not _arecord_running():
+        if time.monotonic() >= deadline:
+            return Check("麦克风", False, "麦克风没有在收音")
+        time.sleep(1)
+    return Check("麦克风", True)
 
 
 def check_network(host: str = "api.anthropic.com", port: int = 443) -> list[Check]:
