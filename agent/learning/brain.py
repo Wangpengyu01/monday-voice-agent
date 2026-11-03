@@ -18,12 +18,17 @@ import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from learning.memory import normalize
+
 MEMO_MARK = "【记忆】"
 
 _TIME_SENSITIVE = re.compile(r"今天|明天|昨天|现在|最近|最新|今年|天气|气温|新闻|股价|汇率|比分|比赛|票价|价格|多少钱|上映|发布")
 _PERSONAL = re.compile(r"^我(?:的|是|在|住|叫|每天|每周|周[一二三四五六日天]|喜欢|不喜欢|讨厌|习惯|一般|通常|今年|下课|上课|上班|下班|宿舍|生日)"
                        r"|我.{0,6}(?:下课|上课|上班|下班|宿舍|生日|喜欢|过敏)")
 _CORRECTION = re.compile(r"^(?:不对|错了|你说错了|说错了|不是这样|不是的|你搞错了|答错了)")
+# a plain fact question ("世界上最长的河是哪条") the small model may get wrong
+_FACTUAL = re.compile(r"是哪|哪条|哪个|哪座|哪年|哪一年|哪国|多少|多久|多远|多高|多大|多长|几[个年月岁号点]|谁(?:发明|写|是)|什么时候")
+_ABOUT_YOU = re.compile(r"你(?!知道|知不知道|觉得)")  # "你几岁了" is about 星期一, answered by the persona
 _UNSURE = re.compile(r"不确定|不太清楚|不知道|无法回答|没有相关信息|我查不到|没法确定|可能是|大概是")
 
 
@@ -49,8 +54,12 @@ def route(question: str, kind: str, *, teacher_ok: bool, memory_answer: str = ""
         return Route("teacher", "time-sensitive")
     if _PERSONAL.search(question):
         return Route("teacher", "personal info to remember")
+    if _ABOUT_YOU.search(question):
+        return Route("local", "about 星期一")
     if kind in ("lookup", "explain"):
         return Route("teacher", kind)
+    if kind == "chat" and _FACTUAL.search(question):
+        return Route("teacher", "fact")
     return Route("local", kind)
 
 
@@ -128,12 +137,21 @@ class Learner:
     lora_log: Path
     learned: list[str] = field(default_factory=list)
 
-    def learn(self, question: str, spoken: str, memo: dict, *, system: str, wrong: str = "") -> None:
+    def learn(self, question: str, spoken: str, memo: dict, *, system: str, wrong: str = "",
+              keep_if_no_card: bool = False) -> None:
         """Keep what the teacher taught: knowledge, facts about the user, the correction, training data."""
+        if (wrong or keep_if_no_card) and not memo:
+            # a correction or a plain fact question, but the teacher left out the memory card:
+            # keep the answer it gave
+            memo = dict(memo, remember=True, a=spoken.strip(), q=memo.get("q") or question)
         if memo.get("remember") and memo.get("a"):
             days = memo.get("days")
-            self.store.remember(str(memo.get("q") or question), str(memo["a"]),
-                                days=float(days) if isinstance(days, (int, float)) and days > 0 else None)
+            days = float(days) if isinstance(days, (int, float)) and days > 0 else None
+            canon = str(memo.get("q") or question)
+            self.store.remember(canon, str(memo["a"]), days=days)
+            if normalize(question) != normalize(canon):
+                # also keep how the user actually put it ("珠峰多高" for "珠穆朗玛峰有多高")
+                self.store.remember(question, str(memo["a"]), days=days)
             self.learned.append(str(memo.get("q") or question))
         for fact in memo.get("facts") or []:
             if isinstance(fact, str):

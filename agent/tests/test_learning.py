@@ -102,5 +102,54 @@ class LearnerTests(unittest.TestCase):
             store._db.close()
 
 
+    def test_correction_without_memo_card_keeps_corrected_answer(self) -> None:
+        with tempfile.TemporaryDirectory() as d:
+            store = MemoryStore(Path(d) / "m.db")
+            Learner(store, Path(d) / "lora.jsonl").learn(
+                "世界上最长的河是哪条", "有争议，按新测量亚马逊河更长。", {}, system="s", wrong="尼罗河。")
+            hit = store.best_answer("世界上最长的河是哪条")
+            self.assertIsNotNone(hit)
+            self.assertIn("亚马逊", hit.answer)
+            store._db.close()
+
+
+    def test_fact_answer_without_card_is_kept_only_when_asked(self) -> None:
+        with tempfile.TemporaryDirectory() as d:
+            store = MemoryStore(Path(d) / "m.db")
+            lr = Learner(store, Path(d) / "lora.jsonl")
+            lr.learn("长城有多长", "约两万一千公里。", {}, system="s")
+            self.assertEqual(store.stats()["knowledge"], 0)
+            lr.learn("长城有多长", "约两万一千公里。", {}, system="s", keep_if_no_card=True)
+            self.assertIsNotNone(store.best_answer("长城有多长"))
+            store._db.close()
+
+
+class ParaphraseTests(unittest.TestCase):
+    def test_paraphrase_hits_but_other_city_or_vehicle_does_not(self) -> None:
+        with tempfile.TemporaryDirectory() as d:
+            store = MemoryStore(Path(d) / "m.db")
+            store.remember("北京到上海高铁最快多久", "最快约四小时二十八分钟")
+            self.assertIsNotNone(store.best_answer("北京去上海坐高铁多长时间"))
+            self.assertIsNone(store.best_answer("北京到广州高铁最快多久"))
+            self.assertIsNone(store.best_answer("北京到上海飞机最快多久"))
+            store._db.close()
+
+    def test_fact_questions_go_to_teacher_but_not_questions_about_monday(self) -> None:
+        self.assertEqual(route("世界上最长的河是哪条", "chat", teacher_ok=True).who, "teacher")
+        self.assertEqual(route("你几岁了", "chat", teacher_ok=True).who, "local")
+        self.assertEqual(route("你几岁了", "lookup", teacher_ok=True).who, "local")
+        self.assertEqual(route("你知道珠峰多高吗", "lookup", teacher_ok=True).who, "teacher")
+
+    def test_user_wording_is_kept_as_alias(self) -> None:
+        with tempfile.TemporaryDirectory() as d:
+            store = MemoryStore(Path(d) / "m.db")
+            Learner(store, Path(d) / "lora.jsonl").learn(
+                "珠峰多高", "八千八百四十八点八六米。",
+                {"remember": True, "q": "珠穆朗玛峰有多高", "a": "八千八百四十八点八六米"}, system="s")
+            self.assertIsNotNone(store.best_answer("珠峰多高"))
+            self.assertIsNotNone(store.best_answer("珠穆朗玛峰有多高"))
+            store._db.close()
+
+
 if __name__ == "__main__":
     unittest.main()

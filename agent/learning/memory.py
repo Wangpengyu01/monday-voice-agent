@@ -21,9 +21,22 @@ _PUNCT = re.compile(r"[\s，,。.！!？?、~～…：:；;\"“”'‘’（）
 _FILLER = re.compile(r"^(?:请问|那个|你知道|你知不知道|告诉我|我想知道|帮我查一下|查一下)+|(?:吗|呢|呀|啊|吧)+$")
 
 
+# same question, different words: "北京去上海坐高铁多长时间" ~ "从北京到上海的高铁要多久"
+_SYNONYMS = [
+    (re.compile(r"(?:需要|要|得)?(?:多长时间|多少时间|多久|多长时候|几个小时)"), "多久"),
+    (re.compile(r"(?:需要|要|得)?(?:多少钱|什么价|啥价)"), "多少钱"),
+    (re.compile(r"是什么|是啥|是哪个|是哪一个|是哪条|是哪座|是哪里|在哪儿|在哪里|在哪"), "是哪"),
+    (re.compile(r"(?<=[一-鿿])(?:去|往|至)(?=[一-鿿])"), "到"),
+    (re.compile(r"^从"), ""),
+    (re.compile(r"坐|乘|搭|的"), ""),
+]
+
+
 def normalize(text: str) -> str:
-    t = _PUNCT.sub("", text or "")
-    return _FILLER.sub("", t)
+    t = _FILLER.sub("", _PUNCT.sub("", text or ""))
+    for pat, rep in _SYNONYMS:
+        t = pat.sub(rep, t)
+    return t
 
 
 def similarity(a: str, b: str) -> float:
@@ -92,6 +105,11 @@ class MemoryStore:
                 "JOIN knowledge k ON k.id = f.rowid WHERE knowledge_fts MATCH ? ORDER BY bm25(knowledge_fts) LIMIT 20",
                 (q,),
             ).fetchall()
+            if len(rows) < k and self._db.execute("SELECT count(*) FROM knowledge").fetchone()[0] <= 5000:
+                # no shared trigram (paraphrase): a small memory is cheap to scan whole
+                seen = {r[0] for r in rows}
+                rows += [r for r in self._db.execute(
+                    "SELECT id, question, answer, source, expires FROM knowledge") if r[0] not in seen]
         out = [Knowledge(*r) for r in rows if not r[4] or r[4] > now]
         for item in out:
             item.score = similarity(question, item.question)

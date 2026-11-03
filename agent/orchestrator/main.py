@@ -2007,6 +2007,7 @@ class Orchestrator:
                     teacher_q, teacher_wrong = self._last_qa
                     teacher_user = (f"刚才主人问：{teacher_q}\n你回答：{teacher_wrong}\n主人说：{user_prompt}\n"
                                     "请直接给主人正确的答案。记忆卡片里的 q 写原来的问题。")
+                teacher_user += f"\n（答完另起一行附上{MEMO_MARK}卡片）"
 
                 def on_teacher_token(piece: str) -> None:
                     out = memo_filter.feed(piece)
@@ -2101,6 +2102,7 @@ class Orchestrator:
                     await asyncio.to_thread(
                         self.learner.learn, teacher_q, full, memo,
                         system=self._system_body(), wrong=teacher_wrong,
+                        keep_if_no_card=learn_route.reason in ("lookup", "explain", "fact"),
                     )
                     LOG.info("[learn] learned from teacher: remember=%s facts=%s memo_q=%s",
                              memo.get("remember"), memo.get("facts"), str(memo.get("q", ""))[:30])
