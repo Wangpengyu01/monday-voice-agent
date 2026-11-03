@@ -33,5 +33,11 @@ class SplitEnglishTests(unittest.TestCase):
         self.assertTrue(any("M O N D A Y" in c for c in chunks), chunks)
 
 
+    def test_spaced_acronym_stays_together(self) -> None:
+        reply = "主人，我叫星期一是因为我的名字来源于你提到的M O N D A Y Male Operational Network Digital Assistant Youth，也就是青年版。"
+        chunks = stream(reply)
+        self.assertTrue(any("M O N D A Y" in c for c in chunks), chunks)
+
+
 if __name__ == "__main__":
     unittest.main()

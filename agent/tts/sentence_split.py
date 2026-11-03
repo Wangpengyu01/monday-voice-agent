@@ -145,6 +145,10 @@ def is_closing_filler(text: str) -> bool:
 def _cut_outside_word(buf: str, idx: int) -> int:
     """Move a forced cut position out of an English word ("Operationa|l" -> before "Operational")."""
     idx = min(idx, len(buf))
+    # a spelled-out acronym "M O N D A Y" / "M.O.N.D.A.Y." counts as one word
+    for m in re.finditer(r"(?<![A-Za-z])(?:[A-Za-z][ .]){2,}[A-Za-z](?![A-Za-z])", buf):
+        if m.start() < idx < m.end():
+            return m.start() if m.start() >= 8 else m.end()
 
     def in_word(ch: str) -> bool:  # letters plus the dots/hyphens/apostrophes of M.O.N.D.A.Y., don't
         return ch.isascii() and (ch.isalpha() or ch in ".-'")
