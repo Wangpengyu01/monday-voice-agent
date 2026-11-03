@@ -17,11 +17,12 @@ import datetime
 import random
 import re
 
+from orchestrator.persona import CALL_NAME_RE, INTRODUCTION
 from tts.number_cn import int_cn
 
 _WEEKDAYS = ["星期一", "星期二", "星期三", "星期四", "星期五", "星期六", "星期日"]
 
-_WAKE_PREFIX = re.compile(r"^(?:(?:嘿|嗨|喂|哈喽|你好)?小揽|主人)+")
+_WAKE_PREFIX = re.compile(r"^(?:(?:嘿|嗨|喂|哈喽|你好)?" + CALL_NAME_RE + r"|主人)+")
 _TRAIL = re.compile(r"[呀啊呢吧嘛哈哦啦]+$")
 _PUNCT = re.compile(r"[\s，,。.！!？?、~～…]+")
 
@@ -72,8 +73,8 @@ def _date_cn(now: datetime.datetime) -> str:
 
 
 _GREETING = {"你好", "您好", "嗨", "哈喽", "早", "早上好", "早安", "上午好", "中午好", "下午好", "晚上好", "在吗你好"}
-_WHO = {"你是谁", "你叫什么", "你叫什么名字", "你的名字", "你的名字是什么", "你是什么", "介绍一下你自己", "你介绍一下自己", "自我介绍一下"}
-_THANKS = {"谢谢", "谢谢你", "谢谢小揽", "多谢", "辛苦了", "辛苦你了", "感谢"}
+_WHO = {"你是谁", "你叫什么", "你叫啥", "你叫什么名字", "你是何方神圣", "你的名字", "你的名字是什么", "你是什么", "介绍一下你自己", "你介绍一下自己", "自我介绍一下"}
+_THANKS = {"谢谢", "谢谢你", "谢谢小揽", "谢谢星期一", "多谢", "辛苦了", "辛苦你了", "感谢"}
 _BYE = {"再见", "拜拜", "回头见", "我走了"}
 _NIGHT = {"晚安", "我睡了", "我去睡觉了"}
 _TIME = {"几点了", "现在几点", "现在几点了", "现在什么时间", "现在是什么时间", "几点钟了", "现在几点钟"}
@@ -96,7 +97,7 @@ def quick_reply_for(text: str, now: datetime.datetime | None = None) -> str | No
         return None
     now = now or datetime.datetime.now()
     if u in _WHO:
-        return "我是小揽，您的语音管家，有事尽管吩咐。"
+        return INTRODUCTION
     if u in _GREETING:
         return f"{_period(now.hour)}好，主人。"
     if u in _THANKS:

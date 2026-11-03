@@ -56,6 +56,7 @@ from orchestrator.dialogue_policy import (
 from orchestrator.events import AgentState
 from settings.store import UserSettingsStore
 from tts.sentence_split import (
+    set_keep_latin,
     StreamingSentenceSplitter,
     canned_reply_for,
     clean_llm_reply,
@@ -317,6 +318,7 @@ class Orchestrator:
             merge_max_chars=int(tts_cfg.get("merge_max_chars", 40)),
         )
         self.tts_queue.text_filter = self._apply_title
+        set_keep_latin(getattr(tts_engine, "streaming", False))  # Qwen3-TTS reads English itself
         self.vad_stream = VadStream(self.vad_config, self.vad_queue)
         self.debug_audio = DebugAudioController(self)
         self._loop: asyncio.AbstractEventLoop | None = None
@@ -354,6 +356,7 @@ class Orchestrator:
 
     async def _sync_tts_from_voice_settings(self) -> None:
         await self.tts_queue.reconfigure(self._tts_config_from_voice())
+        set_keep_latin(getattr(self.tts_queue.engine, "streaming", False))
         self._ack_cache = {}
         asyncio.create_task(self._warm_ack_cache())
         self.tts_queue.engine.set_playback_env(self.audio_profile.playback_env())

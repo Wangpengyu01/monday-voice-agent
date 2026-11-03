@@ -13,6 +13,7 @@ if str(AGENT_ROOT) not in sys.path:
     sys.path.insert(0, str(AGENT_ROOT))
 
 from orchestrator.main import Orchestrator  # noqa: E402
+from orchestrator.persona import INTRODUCTION  # noqa: E402
 from orchestrator.events import AgentState  # noqa: E402
 from llm.client import LlmUnavailableError  # noqa: E402
 
@@ -376,7 +377,7 @@ class StreamingTurnTests(unittest.IsolatedAsyncioTestCase):
 
         with patch("orchestrator.main.llm_chat_stream", must_not_call):
             await orch._run_llm("你是谁", generation=11, vad_end_at=time.monotonic())
-        self.assertEqual(spoken, ["我是小揽，您的语音管家，有事尽管吩咐。"])
+        self.assertEqual(spoken, [INTRODUCTION])
 
         spoken.clear()
         with patch("orchestrator.main.llm_chat_stream", must_not_call):

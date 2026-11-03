@@ -32,8 +32,8 @@ COMMON_EN = [
     (r"(?<![A-Za-z])ai(?![A-Za-z])", "人工智能"),
     (r"(?<![A-Za-z])app(?![A-Za-z])", "应用"),
     (r"(?<![A-Za-z])api(?![A-Za-z])", "接口"),
-    (r"(?<![A-Za-z])intern-?s1(?![A-Za-z])", "小揽"),
-    (r"(?<![A-Za-z])intern(?![A-Za-z])", "小揽"),
+    (r"(?<![A-Za-z])intern-?s1(?![A-Za-z])", "星期一"),
+    (r"(?<![A-Za-z])intern(?![A-Za-z])", "星期一"),
     (r"(?<![A-Za-z])r1(?![A-Za-z])", "阿尔一"),
     (r"(?<![A-Za-z])cpu(?![A-Za-z])", "处理器"),
     (r"(?<![A-Za-z])gpu(?![A-Za-z])", "显卡"),
@@ -75,6 +75,17 @@ def transliterate_en(text: str) -> str:
     return re.sub(r"[A-Za-z]", repl_letter, text)
 
 
+# Qwen3-TTS reads English itself; the matcha/vits voices can't, so for them English is spelled
+# out in Chinese phonetics. The orchestrator turns this on when the active TTS backend is qwen3.
+_KEEP_LATIN = False
+_SELF_NAME_EN = re.compile(r"(?<![A-Za-z])intern(?:-?s1|vl[\w.-]*)?(?![A-Za-z])", re.IGNORECASE)
+
+
+def set_keep_latin(keep: bool) -> None:
+    global _KEEP_LATIN
+    _KEEP_LATIN = bool(keep)
+
+
 def sanitize_tts_text(text: str) -> str:
     text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL)
     text = re.sub(r"</?think>", "", text)
@@ -85,8 +96,8 @@ def sanitize_tts_text(text: str) -> str:
     text = _MD_NUM_LIST.sub("，", text)
     text = _MD_HEAD.sub("", text)
     text = text.replace("*", "").replace("`", "").replace("#", "")
-    # LLM 常复读 prompt 里的「小揽：」前缀或标记
-    text = re.sub(r"^小揽[：:]\s*", "", text)
+    # LLM 常复读 prompt 里的「星期一：」前缀或标记
+    text = re.sub(r"^(?:星期一|小揽)[：:]\s*", "", text)
     text = re.sub(r"<\|im_end\|>.*", "", text)
     text = re.sub(r"三[Dd]?打印", "三维打印", text, flags=re.IGNORECASE)
     # 数字按中文习惯读（十一月、三点五、百分之五十）；要在冒号转逗号之前，否则 13:05 会被拆开
@@ -95,11 +106,19 @@ def sanitize_tts_text(text: str) -> str:
     text = re.sub(r"[：:；;]+", "，", text)
     text = re.sub(r"[\r\n]+", "。", text)
     text = text.translate(_DIGIT_MAP)
-    # 英文音译转汉字发音
-    text = transliterate_en(text)
-    # 过滤无法发音的符号
-    text = re.sub(r"[-—–\.．\(\)（）【】\[\]「」\"\"\'\'·=]+", "", text)
-    text = re.sub(r"[^\u4e00-\u9fff。！？，]", "", text)
+    if _KEEP_LATIN:
+        # the model may call itself InternVL / Intern-S1; other English is read as is
+        text = _SELF_NAME_EN.sub("星期一", text)
+        text = re.sub(r"[-—–\.．\(\)（）【】\[\]「」\"\"\'\'·=]+", " ", text)
+        text = re.sub(r"[^一-鿿A-Za-z 。！？，]", "", text)
+        text = re.sub(r" {2,}", " ", text)
+        text = re.sub(r" *([，。！？]) *", r"\1", text)
+    else:
+        # 英文音译转汉字发音
+        text = transliterate_en(text)
+        # 过滤无法发音的符号
+        text = re.sub(r"[-—–\.．\(\)（）【】\[\]「」\"\"\'\'·=]+", "", text)
+        text = re.sub(r"[^\u4e00-\u9fff。！？，]", "", text)
     text = re.sub(r"[，。！？]+([。！？])", r"\1", text)
     text = re.sub(r"^[，。！？]+", "", text)
     text = re.sub(r"[，]{2,}", "，", text)
@@ -111,7 +130,7 @@ _CLOSING_FILLER = re.compile(
     r"^(?:如果|若是?|假如|如)[^。！？]{0,4}(?:还有|有任何|有其他|有别的|还需要|需要|有)[^。！？]{0,14}(?:问题|疑问|需要|帮助|解释|了解|吩咐)"
     r"|^(?:主人|您|你)?(?:还有|有任何|有其他|有别的)[^。！？]{0,10}(?:问题|疑问)"
     r"|(?:请|欢迎)?随时(?:告诉|吩咐|叫|找|问|联系)"
-    r"|有什么(?:我|小揽)?(?:可以|能)?(?:帮|为|效劳)[^。！？]{0,8}(?:吗|呢)"
+    r"|有什么(?:我|小揽|星期一)?(?:可以|能)?(?:帮|为|效劳)[^。！？]{0,8}(?:吗|呢)"
     r"|^(?:还)?需要我[^。！？]{0,16}吗"
     r"|^还有(?:什么|其他|别的)[^。！？]{0,10}(?:吗|呢)"
     r"|^希望(?:这|以上|我的)[^。！？]{0,12}(?:帮助|有用|帮到)"
@@ -124,6 +143,8 @@ def is_closing_filler(text: str) -> bool:
 
 
 def is_speakable(text: str) -> bool:
+    if _KEEP_LATIN and re.search(r"[A-Za-z]{2,}", text):
+        return True
     return len(re.findall(r"[\u4e00-\u9fff0-9]", text)) >= _MIN_SPOKEN_CHARS
 
 
@@ -190,11 +211,11 @@ _STORY = re.compile(r"故事|哄我|睡前|讲个笑话|讲个故事|讲讲话|�
 _NAME = re.compile(r"叫什么|名字|你是谁|哪位")
 STOP_PATTERN = re.compile(r"(停|暂停|别说了|不要说了|闭嘴|算了|打住|停止|停下|别讲了|安静|不要讲|停一下|等等|等一下|别出声|闭上嘴)")
 _STOP = STOP_PATTERN
-_INTRO_PREFIX = re.compile(r"^(?:我叫小揽|我是小揽)[，,。\s]*")
-_NAME_ONLY = re.compile(r"^(?:我叫小揽|我是小揽)[。！？]?$")
+_INTRO_PREFIX = re.compile(r"^(?:我叫|我是)(?:小揽|星期一)[，,。\s]*")
+_NAME_ONLY = re.compile(r"^(?:我叫|我是)(?:小揽|星期一)[。！？]?$")
 _SCIENCE_LECTURE = re.compile(r"引力是|基本力|时空弯曲|训练数据|超参数")
 _TRANSCRIPT_ECHO = re.compile(r"(?:\r?\n\s*){1,2}用户[：:]")
-_INLINE_TRANSCRIPT = re.compile(r"用户[：:][^。！？!?]*小揽[：:]")
+_INLINE_TRANSCRIPT = re.compile(r"用户[：:][^。！？!?]*(?:小揽|星期一)[：:]")
 _STORY_FALLBACKS = (
     "好呀，小狐狸在夜里找星星，走累了靠着月亮睡了。风轻轻吹，它梦见彩虹。晚安，好梦。",
     "从前有只小兔子，每天傍晚都在窗台等晚霞。有一天晚霞落在它耳朵上，变成了一朵温暖的花。",
@@ -248,7 +269,7 @@ def clean_llm_reply(user_text: str, reply: str) -> str:
     text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL)
     text = re.sub(r"</?think>", "", text)
     text = re.sub(r"<\|.*?\|>", "", text)
-    text = re.sub(r"^小揽[：:]\s*", "", text)
+    text = re.sub(r"^(?:小揽|星期一)[：:]\s*", "", text)
     if not user_asked_name(user_text):
         text = _INTRO_PREFIX.sub("", text).strip()
     text = _THINKING_PREFIX.sub("", text).strip("，,。！？ ")
@@ -263,7 +284,7 @@ def is_spurious_name_reply(user_text: str, reply: str) -> bool:
     clean = sanitize_tts_text(clean_llm_reply(user_text, reply))
     if not clean:
         return True
-    return len(_CJK.findall(clean)) <= 8 and bool(re.search(r"叫小揽|是小揽", clean))
+    return len(_CJK.findall(clean)) <= 8 and bool(re.search(r"叫(?:小揽|星期一)|是(?:小揽|星期一)", clean))
 
 
 def is_robotic_reply(text: str) -> bool:
@@ -309,14 +330,14 @@ def is_echo_reply(user_text: str, reply: str) -> bool:
     return False
 
 
-_PRESENCE = re.compile(r"^(?:你?在[吗嘛]|人呢|你在[哪哪儿]|在不在|(?:你好|电好|男好|嘿|嗨|喂)?小揽)[呀啊吧呢]?$")
+_PRESENCE = re.compile(r"^(?:你?在[吗嘛]|人呢|你在[哪哪儿]|在不在|(?:你好|电好|男好|嘿|嗨|喂)?(?:小揽|星期一))[呀啊吧呢]?$")
 
 
 _JARVIS_CANNED_REPLIES = (
     "随时待命，主人。",
     "我在，主人请吩咐。",
     "系统运转正常，随时听候调遣，主人。",
-    "小揽一直在，主人请讲。",
+    "星期一一直在线，主人请讲。",
 )
 _canned_idx = 0
 
@@ -464,7 +485,7 @@ class StreamingSentenceSplitter:
                 return []
 
         # Strip prefixes and special tokens
-        self._buf = re.sub(r"^小揽[：:]\s*", "", self._buf)
+        self._buf = re.sub(r"^(?:小揽|星期一)[：:]\s*", "", self._buf)
         self._buf = re.sub(r"<\|.*?\|>", "", self._buf)
         self._buf = re.sub(r"</?think>", "", self._buf)
 

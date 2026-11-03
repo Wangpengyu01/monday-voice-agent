@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title>小揽 · 边缘多模态智能终端控制台</title>
+  <title>星期一 · M.O.N.D.A.Y. 控制台</title>
   <style>
     :root {
       --bg-dark: #0a0e17;
@@ -626,7 +626,7 @@
   <header>
     <div class="brand">
       <div class="brand-logo">揽</div>
-      <div class="brand-title">小揽 · 边缘多模态智能终端</div>
+      <div class="brand-title">星期一 · M.O.N.D.A.Y.</div>
       <span class="brand-sub">InternVL3 · P5b vlm_daemon</span>
     </div>
     <div class="header-actions">
@@ -746,7 +746,7 @@
           <!-- Chat messages stream -->
           <div id="chatBox" class="chat-container">
             <div class="chat-msg assistant">
-              <div class="msg-header">小揽 (端侧智能体) · 系统提示</div>
+              <div class="msg-header">星期一 · 系统提示</div>
               <div class="msg-bubble">
                 随时待命，主人请吩咐。您可以通过板载麦克风直接对我说话，或在下方输入指令。
               </div>
@@ -976,7 +976,7 @@
         activeAssistantMsgEl = document.createElement("div");
         activeAssistantMsgEl.className = "chat-msg assistant";
         activeAssistantMsgEl.innerHTML = `
-          <div class="msg-header">小揽 (端侧智能体) · ${new Date().toLocaleTimeString()}</div>
+          <div class="msg-header">星期一 · ${new Date().toLocaleTimeString()}</div>
           <div class="msg-bubble">
             <span class="token-stream"></span>
             <div class="tts-playing-tag" style="display: none;">
@@ -1227,7 +1227,7 @@
     clearChatBtn.addEventListener("click", () => {
       chatBox.innerHTML = `
         <div class="chat-msg assistant">
-          <div class="msg-header">小揽 · 提示</div>
+          <div class="msg-header">星期一 · 提示</div>
           <div class="msg-bubble">对话记录已清空。随时待命${userTitle ? "，" + escapeHtml(userTitle) : ""}请吩咐。</div>
         </div>
       `;

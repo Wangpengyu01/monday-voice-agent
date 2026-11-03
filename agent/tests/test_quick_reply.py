@@ -7,6 +7,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import random  # noqa: E402
 
+from orchestrator.persona import INTRODUCTION  # noqa: E402
+
 from orchestrator.quick_reply import ACK_GROUPS, ack_for, ack_kind, quick_reply_for, strip_leading_ack  # noqa: E402
 
 NOW = datetime.datetime(2026, 11, 2, 13, 53)  # Monday
@@ -15,8 +17,10 @@ NOW = datetime.datetime(2026, 11, 2, 13, 53)  # Monday
 class QuickReplyTests(unittest.TestCase):
     def test_trivial_questions_answered_locally(self) -> None:
         cases = {
-            "你是谁": "我是小揽，您的语音管家，有事尽管吩咐。",
-            "小揽，你叫什么名字？": "我是小揽，您的语音管家，有事尽管吩咐。",
+            "你是谁": INTRODUCTION,
+            "小揽，你叫什么名字？": INTRODUCTION,
+            "星期一，你叫什么名字？": INTRODUCTION,
+            "谢谢星期一": "不客气，主人。",
             "现在几点了": "现在是下午一点五十三分。",
             "今天星期几呀": "今天是十一月二日，星期一。",
             "谢谢": "不客气，主人。",

@@ -1,5 +1,5 @@
 [Unit]
-Description=小揽 CLI 核心 (xiaolan_cli serve: WS API + 语音; WebUI 走同一 brain)
+Description=星期一 (M.O.N.D.A.Y.) 核心 (xiaolan_cli serve: WS API + 语音; WebUI 走同一 brain)
 After=r1-vlm-daemon.service r1-llm-daemon.service r1-p4-eth.service network-online.target sound.target
 Wants=r1-vlm-daemon.service r1-p4-eth.service network-online.target
 
