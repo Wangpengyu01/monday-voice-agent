@@ -3,7 +3,14 @@ from __future__ import annotations
 
 import re
 
-_DUP_CHAR = re.compile(r"(.)\1{1,}")
+# Collapse stuttered Chinese characters ("看看看" -> "看") but never digits, letters or Chinese numerals:
+# "155", "SSH", "aa1122", "幺五五" must reach the rest of the pipeline intact.
+_DUP_CHAR = re.compile(r"([一-鿿])\1{2,}")  # 3+ in a row: "看看", "谢谢", a cat called "豆豆" stay
+_CN_NUM = set("零〇一二三四五六七八九十百千万亿幺两")
+
+
+def _collapse(m: re.Match) -> str:
+    return m.group(0) if m.group(1) in _CN_NUM else m.group(1)
 _DUP_GREET = re.compile(r"^(你好[呀啊]?)+")
 _PURE_GREET = re.compile(r"^你好[呀啊]?$")
 _NAME_FIX = re.compile(r"小懒|小兰|小蓝|小榄|影力")
@@ -18,7 +25,7 @@ def normalize_user_text(text: str) -> str:
     text = (text or "").strip()
     if not text:
         return text
-    text = _DUP_CHAR.sub(r"\1", text)
+    text = _DUP_CHAR.sub(_collapse, text)
     text = _DUP_GREET.sub("你好", text)
     if text.startswith("电好"):
         text = "你好" + text[2:]

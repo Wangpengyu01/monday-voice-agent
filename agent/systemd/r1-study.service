@@ -1,0 +1,20 @@
+[Unit]
+Description=星期一 studies non-stop: lesson -> practice round -> lesson ... (pauses while the owner is talking)
+After=network-online.target r1-llm-daemon.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=youyeetoo
+Group=youyeetoo
+WorkingDirectory=/userdata/agent
+EnvironmentFile=-/userdata/secrets/deepseek.env
+ExecStart=/usr/bin/python3 -m learning.study_loop
+StandardOutput=append:/userdata/agent/logs/study.log
+StandardError=append:/userdata/agent/logs/study.log
+Restart=always
+RestartSec=30
+Nice=10
+
+[Install]
+WantedBy=multi-user.target

@@ -122,6 +122,26 @@ class StreamingQueueTests(unittest.IsolatedAsyncioTestCase):
         finally:
             await queue.stop()
 
+    async def test_cached_fixed_reply_plays_without_synthesis(self) -> None:
+        client = FakeClient(self.tmp, {"第二句。": [("b0", True)]})
+        engine = FakeStreamingEngine(client)
+        queue = TtsQueue(engine)
+        queue.text_filter = lambda t: t.replace("主人", "王哥")
+        clip = self.tmp / "clip_thanks.wav"
+        clip.write_bytes(b"x")
+        queue.clip_cache = {queue.spoken_form("不客气，主人。"): clip}
+        await queue.start()
+        try:
+            queue.mark_utterance_start(1)
+            await queue.enqueue("不客气，主人。", generation=1)
+            await queue.enqueue("第二句。", generation=1)
+            await asyncio.wait_for(queue.wait_done(generation=1), timeout=2)
+            self.assertEqual(engine.stream_player.events, ["start", "clip_thanks", "qtts_b0", "finish"])
+            self.assertEqual(client.submitted, ["第二句。"])  # the cached one never reached the daemon
+            self.assertTrue(clip.exists())
+        finally:
+            await queue.stop()
+
     async def test_request_without_final_chunk_still_finishes_the_stream(self) -> None:
         client = FakeClient(self.tmp, {"一句话。": [("c0", False), ("c1", False)]})
         engine = FakeStreamingEngine(client)

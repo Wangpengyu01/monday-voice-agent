@@ -1,0 +1,17 @@
+[Unit]
+Description=星期一 nightly self-reflection (teacher grades the day, quiz on weak spots, diary, LoRA dataset)
+After=network-online.target r1-llm-daemon.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=youyeetoo
+Group=youyeetoo
+WorkingDirectory=/userdata/agent
+EnvironmentFile=-/userdata/secrets/deepseek.env
+# one learner at a time on the local model (school / practice / reflect share the lock)
+ExecStart=/usr/bin/flock -w 1800 /tmp/monday-study.lock /usr/bin/python3 -m learning.reflect
+StandardOutput=append:/userdata/agent/logs/reflect.log
+StandardError=append:/userdata/agent/logs/reflect.log
+TimeoutStartSec=1800
+Nice=10

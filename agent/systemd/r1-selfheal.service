@@ -1,0 +1,13 @@
+[Unit]
+Description=星期一 self-heal check (restart crashed services; roll back to the last GOOD snapshot on a crash loop)
+After=r1-orchestrator.service
+
+[Service]
+Type=oneshot
+User=root
+WorkingDirectory=/userdata/agent
+Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStart=/usr/bin/python3 -m ops.selfheal check
+StandardOutput=append:/userdata/agent/logs/selfheal.log
+StandardError=append:/userdata/agent/logs/selfheal.log
+TimeoutStartSec=900

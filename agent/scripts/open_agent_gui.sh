@@ -1,10 +1,10 @@
 #!/bin/bash
-# Open 小揽 voice assistant UI (Chromium app window on http://127.0.0.1:8766).
+# Open 小揽 voice assistant UI (Chromium app window on http://127.0.0.1:80/, served by r1-agent-ui).
 set -euo pipefail
 
 AGENT_ROOT="${AGENT_ROOT:-/userdata/agent}"
 UI_DIR="${AGENT_ROOT}/ui"
-PORT="${AGENT_GUI_PORT:-8766}"
+PORT="${AGENT_GUI_PORT:-80}"
 BIND="${AGENT_GUI_BIND:-0.0.0.0}"
 PIDFILE="${AGENT_ROOT}/run/gui_http.pid"
 LOG="${AGENT_ROOT}/logs/gui_http.log"
@@ -35,7 +35,7 @@ fi
 
 stop_existing_gui() {
   pkill -u "${USER_NAME}" -f "${CHROMIUM_PROFILE}" 2>/dev/null || true
-  pkill -u "${USER_NAME}" -f "chromium.*${PORT}" 2>/dev/null || true
+  pkill -u "${USER_NAME}" -f "chromium.*127.0.0.1:${PORT}/" 2>/dev/null || true
   sleep 0.5
 }
 
@@ -115,7 +115,7 @@ show_gnome_chrome() {
 
 chromium_running() {
   pgrep -u "${USER_NAME}" -f "${CHROMIUM_PROFILE}" >/dev/null 2>&1 \
-    || pgrep -u "${USER_NAME}" -f "chromium.*${PORT}" >/dev/null 2>&1
+    || pgrep -u "${USER_NAME}" -f "chromium.*127.0.0.1:${PORT}/" >/dev/null 2>&1
 }
 
 open_browser() {

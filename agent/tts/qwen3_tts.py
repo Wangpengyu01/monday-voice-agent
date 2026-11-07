@@ -190,6 +190,20 @@ def read_pcm(path: Path) -> bytes:
     return data
 
 
+VOLUME_RANGE_DB = 30.0
+
+
+def volume_scale(percent) -> float:
+    """Owner volume 0-100 % -> amplitude factor: 100 % = as loud as before, every 10 % down about -3 dB."""
+    try:
+        pct = max(0.0, min(100.0, float(percent)))
+    except (TypeError, ValueError):
+        return 1.0
+    if pct <= 0:
+        return 0.0
+    return 10 ** (-VOLUME_RANGE_DB * (1 - pct / 100) / 20)
+
+
 class StreamPlayer:
     """One aplay process per utterance; PCM chunks are written to its stdin back to back."""
 
@@ -236,6 +250,7 @@ class StreamPlayer:
             )
         self._target_peak = int(e.get("PLAYBACK_TARGET_PEAK", "26000"))
         self._max_gain = float(e.get("PLAYBACK_MAX_GAIN", "8.0"))
+        self._volume = volume_scale(e.get("PLAYBACK_VOLUME", "100"))
         # amp / codec settle, same as play_wav.sh lead-in
         self._write_raw(b"\x00\x00" * int(SAMPLE_RATE * 0.08) * self.channels)
 
@@ -257,7 +272,8 @@ class StreamPlayer:
         if self.gain is None:
             # one gain per utterance (from its first chunk), like play_wav.sh's utterance_gain
             peak = audioop.max(pcm, 2) if pcm else 0
-            self.gain = 1.0 if peak <= 0 else max(1.0, min(self._max_gain, self._target_peak / peak))
+            auto = 1.0 if peak <= 0 else max(1.0, min(self._max_gain, self._target_peak / peak))
+            self.gain = auto * getattr(self, "_volume", 1.0)   # loudness normalised, then the owner's volume
         if self.gain != 1.0:
             pcm = audioop.mul(pcm, 2, self.gain)
         if self.channels == 2:

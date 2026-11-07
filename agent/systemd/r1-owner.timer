@@ -1,0 +1,10 @@
+[Unit]
+Description=星期一 nightly look at the owner's day at 23:40
+
+[Timer]
+OnCalendar=*-*-* 23:40:00
+Persistent=true
+RandomizedDelaySec=300
+
+[Install]
+WantedBy=timers.target

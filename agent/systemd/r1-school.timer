@@ -1,0 +1,10 @@
+[Unit]
+Description=星期一 school: a lesson every half hour ("一直上课"), skipped while the owner is talking
+
+[Timer]
+OnBootSec=20min
+OnCalendar=*:10/30
+RandomizedDelaySec=60
+
+[Install]
+WantedBy=timers.target

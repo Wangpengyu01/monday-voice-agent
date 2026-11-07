@@ -1,0 +1,9 @@
+[Unit]
+Description=星期一 self-heal check every 2 minutes
+
+[Timer]
+OnCalendar=*:0/2
+AccuracySec=15s
+
+[Install]
+WantedBy=timers.target

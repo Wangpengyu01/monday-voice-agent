@@ -1,0 +1,10 @@
+[Unit]
+Description=星期一 nightly self-reflection at 03:30
+
+[Timer]
+OnCalendar=*-*-* 03:30:00
+Persistent=true
+RandomizedDelaySec=300
+
+[Install]
+WantedBy=timers.target

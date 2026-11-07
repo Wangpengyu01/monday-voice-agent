@@ -16,9 +16,11 @@ class AgentConfigTests(unittest.TestCase):
         cfg = load_yaml(AGENT_ROOT / "config" / "agent.yaml")
         self.assertIn(str(cfg["vad"]["mute_mic_during_tts"]).lower(), ("true", "1"))
 
-    def test_default_mode_omits_unreliable_llm_history(self) -> None:
+    def test_local_model_keeps_five_turns_within_its_context(self) -> None:
+        # Qwen3.5-4B (not InternVL any more) gets the last 5 turns, fitted into llm_context_tokens
         cfg = load_yaml(AGENT_ROOT / "config" / "agent.yaml")
-        self.assertEqual(cfg["history_max_turns"], 0)
+        self.assertGreaterEqual(int(cfg["history_max_turns"]), 5)
+        self.assertEqual(int(cfg["llm_context_tokens"]), 768)
 
 
 if __name__ == "__main__":

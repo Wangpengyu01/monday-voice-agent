@@ -212,6 +212,7 @@ class AudioProfileManager:
             env = dict(self.active.playback_env)
             env["PLAYBACK_PCM_VOLUME"] = str(self.active.usb_pcm_volume)
             env["PLAYBACK_GAIN"] = f"{speaker_percent_to_gain(pct):.2f}"
+            env["PLAYBACK_VOLUME"] = str(pct)   # the streaming Qwen3 player scales its loudness by this
             self.active.playback_env = env
         if vad:
             merged = dict(self.active.vad_overrides)

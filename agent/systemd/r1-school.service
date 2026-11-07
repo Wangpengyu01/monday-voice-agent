@@ -1,0 +1,17 @@
+[Unit]
+Description=星期一 daily school (self-review, lessons with the teacher, homework in a sandbox)
+After=network-online.target r1-llm-daemon.service
+
+[Service]
+Type=oneshot
+User=youyeetoo
+Group=youyeetoo
+WorkingDirectory=/userdata/agent
+EnvironmentFile=-/userdata/secrets/deepseek.env
+# one learner at a time on the local model (school / practice / reflect share the lock)
+# wait for a running practice round (a few minutes) instead of skipping the lesson
+ExecStart=/usr/bin/flock -w 900 -E 0 /tmp/monday-study.lock /usr/bin/python3 -m learning.school
+StandardOutput=append:/userdata/agent/logs/school.log
+StandardError=append:/userdata/agent/logs/school.log
+TimeoutStartSec=2700
+Nice=10

@@ -1,0 +1,15 @@
+[Unit]
+Description=星期一 distils the teacher into checked training data (off-peak only, stops at the budget)
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=youyeetoo
+Group=youyeetoo
+WorkingDirectory=/userdata/agent
+EnvironmentFile=-/userdata/secrets/deepseek.env
+ExecStart=/usr/bin/flock -n -E 0 /tmp/monday-distill.lock /usr/bin/python3 -m learning.distill --max-yuan 40 --workers 2
+StandardOutput=append:/userdata/agent/logs/distill.log
+StandardError=append:/userdata/agent/logs/distill.log
+TimeoutStartSec=infinity
+Nice=10

@@ -112,8 +112,22 @@ def quick_reply_for(text: str, now: datetime.datetime | None = None) -> str | No
     if u in _DATE:
         return f"今天是{_date_cn(now)}。"
     if u in _SKILLS:
-        return "我可以陪您聊天、回答问题、算算数、讲讲知识，有事尽管吩咐。"
+        return SKILLS_REPLY
     return None
+
+
+SKILLS_REPLY = "我可以陪您聊天、回答问题、算算数、讲讲知识，有事尽管吩咐。"
+
+
+def fixed_replies() -> list[str]:
+    """Every quick reply that does not depend on the clock's minutes (time/date are computed live).
+
+    The orchestrator pre-synthesizes these at start-up so they play at once instead of waiting
+    ~2.5 s for TTS.
+    """
+    periods = ("凌晨", "早上", "上午", "中午", "下午", "晚上")
+    return [INTRODUCTION, *(f"{p}好，主人。" for p in periods), "不客气，主人。", "好的，主人，回头见。",
+            "晚安，主人，好梦。", SKILLS_REPLY]
 
 
 # --- spoken ack before an LLM answer -------------------------------------
@@ -123,13 +137,16 @@ def quick_reply_for(text: str, now: datetime.datetime | None = None) -> str | No
 # "哎呀", good news "哇". Each kind has a few interchangeable phrases and the same phrase is not used
 # twice in a row. Every phrase is pre-synthesized at start-up (orchestrator._warm_ack_cache).
 
+# Phrases run ~2 s on purpose: the answer's first audio takes ~3 s after the user stops talking
+# (LLM first sentence + TTS first chunk), and a longer ack covers most of that silence.
+# No "主人" here: the user can change how they are addressed (dialog.user_title).
 ACK_GROUPS: dict[str, tuple[str, ...]] = {
-    "request": ("好嘞，", "好的，", "没问题，", "行，"),
-    "lookup": ("我看看，", "让我看看，", "我查一下，"),
-    "explain": ("这个嘛，", "我想想，", "嗯，这个问题嘛，"),
-    "comfort": ("哎呀，", "唉，"),
-    "cheer": ("哇，", "真的呀，"),
-    "chat": ("嗯，", "嗯嗯，"),
+    "request": ("好嘞，稍等一下哈，", "好的，没问题，你稍等，", "行，我这就来，稍等哈，"),
+    "lookup": ("我看看啊，稍等一下，", "让我查一查，你稍等，", "嗯，我想一想哈，"),
+    "explain": ("这个嘛，我得好好想一想，", "嗯，这个问题有点意思，", "我想想啊，该怎么说呢，"),
+    "comfort": ("哎呀，听着就挺辛苦的，", "唉，抱抱你，我在呢，"),
+    "cheer": ("哇，那可真是太好了，", "真的呀，我也替你高兴，"),
+    "chat": ("嗯，我想想哈，", "嗯嗯，让我想一想，"),
 }
 ACK_PHRASES: tuple[str, ...] = tuple(p for group in ACK_GROUPS.values() for p in group)
 

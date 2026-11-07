@@ -1,0 +1,10 @@
+[Unit]
+Description=星期一 quiet practice every 5 minutes
+
+[Timer]
+OnBootSec=15min
+OnCalendar=*:0/5
+RandomizedDelaySec=30
+
+[Install]
+WantedBy=timers.target

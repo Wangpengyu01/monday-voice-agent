@@ -1,0 +1,15 @@
+[Unit]
+Description=星期一 thinks about the owner's day (habits, profile, ideas, questions, web lookups)
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=youyeetoo
+Group=youyeetoo
+WorkingDirectory=/userdata/agent
+EnvironmentFile=-/userdata/secrets/deepseek.env
+ExecStart=/usr/bin/python3 -m learning.owner
+StandardOutput=append:/userdata/agent/logs/owner.log
+StandardError=append:/userdata/agent/logs/owner.log
+TimeoutStartSec=1200
+Nice=10

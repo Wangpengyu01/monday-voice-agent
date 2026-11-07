@@ -1,1241 +1,1099 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title>星期一 · M.O.N.D.A.Y. 控制台</title>
-  <style>
-    :root {
-      --bg-dark: #0a0e17;
-      --bg-card: rgba(18, 26, 43, 0.78);
-      --bg-card-hover: rgba(26, 37, 60, 0.88);
-      --border-card: rgba(56, 85, 130, 0.35);
-      --border-accent: rgba(0, 229, 255, 0.45);
-      --accent: #00e5ff;
-      --accent-glow: rgba(0, 229, 255, 0.25);
-      --accent-orange: #ff9100;
-      --accent-green: #00e676;
-      --accent-purple: #b388ff;
-      --accent-red: #ff5252;
-      --text-main: #f0f4f8;
-      --text-muted: #8fa0b5;
-      --text-dim: #5c6c82;
-      --radius-sm: 8px;
-      --radius-md: 14px;
-      --radius-lg: 20px;
-    }
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>M.O.N.D.A.Y. · 星期一 语音助手</title>
+<link rel="icon" href="favicon.svg">
+<style>
+:root {
+  --edge: rgba(255, 255, 255, .22);
+  --hi: rgba(255, 255, 255, .45);
+  --text: rgba(255, 255, 255, .94);
+  --dim: rgba(235, 240, 255, .62);
+  --cyan: #64d2ff;
+  --cyan-soft: #a9e6ff;
+  --amber: #ffcc66;
+  --red: #ff6b7a;
+  --green: #4cd98a;
+  --line: rgba(255, 255, 255, .14);
+  --line-strong: rgba(255, 255, 255, .35);
+  --r: 26px;
+  --mono: "SF Mono", "JetBrains Mono", "Cascadia Mono", "DejaVu Sans Mono", Consolas, monospace;
+  --sans: -apple-system, "SF Pro Display", "PingFang SC", "Noto Sans CJK SC", "Microsoft YaHei", system-ui, sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; color: var(--text); font-family: var(--sans); overflow: hidden; -webkit-font-smoothing: antialiased; }
+body { background: #0b1020; }
+/* soft colour field behind the glass (static, so blurring it stays cheap on the board) */
+.bg { position: fixed; inset: -10%; z-index: 0; filter: blur(70px) saturate(140%); }
+.bg i { position: absolute; border-radius: 50%; opacity: .75; }
+.bg i:nth-child(1) { width: 46vw; height: 46vw; left: -4vw; top: -6vw; background: #3a6dff; }
+.bg i:nth-child(2) { width: 40vw; height: 40vw; right: -6vw; top: 4vw; background: #b04dff; }
+.bg i:nth-child(3) { width: 42vw; height: 42vw; left: 28vw; bottom: -14vw; background: #00b8d9; }
+.bg i:nth-child(4) { width: 26vw; height: 26vw; right: 18vw; bottom: 2vw; background: #ff6fa8; opacity: .5; }
+.bg::after { content: ""; position: absolute; inset: 0; background: rgba(8, 12, 28, .35); }
+button, input, select { font: inherit; color: inherit; }
+.app { position: relative; z-index: 1; height: 100vh; display: grid; grid-template-rows: 64px 1fr; }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+/* ---------- glass */
+.glass, header, .panel {
+  background: linear-gradient(145deg, rgba(255, 255, 255, .16), rgba(255, 255, 255, .06));
+  backdrop-filter: blur(28px) saturate(170%); -webkit-backdrop-filter: blur(28px) saturate(170%);
+  border: 1px solid var(--edge);
+  box-shadow: inset 0 1px 0 var(--hi), inset 0 -1px 0 rgba(255, 255, 255, .06), 0 18px 50px rgba(0, 0, 0, .28);
+}
 
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Noto Sans CJK SC", "Microsoft YaHei", sans-serif;
-      background: radial-gradient(circle at 15% 15%, #142036 0%, #0a0e17 80%);
-      color: var(--text-main);
-      height: 100vh;
-      width: 100vw;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-    }
+/* ---------- top bar */
+header { margin: 12px 16px 0; border-radius: 22px; display: flex; align-items: center; gap: 20px; padding: 0 22px; }
+.brand { font-size: 19px; font-weight: 600; letter-spacing: .02em; }
+.brand small { font-weight: 400; color: var(--dim); font-size: 14px; margin-left: 8px; }
+header .grow { flex: 1; }
+.chip { font-size: 13px; color: var(--dim); display: flex; align-items: center; gap: 7px; }
+.chip b { color: var(--text); font-weight: 500; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--red); box-shadow: 0 0 8px var(--red); }
+.dot.ok { background: var(--green); box-shadow: 0 0 8px var(--green); }
+#clock { font-size: 22px; font-weight: 300; font-variant-numeric: tabular-nums; }
 
-    /* Header */
-    header {
-      flex: 0 0 auto;
-      height: 60px;
-      background: rgba(10, 14, 23, 0.85);
-      backdrop-filter: blur(12px);
-      border-bottom: 1px solid var(--border-card);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 1.25rem;
-      z-index: 10;
-    }
+/* ---------- layout */
+main { display: grid; grid-template-columns: 320px 1fr 450px; gap: 16px; padding: 16px; min-height: 0; }
+.col { display: flex; flex-direction: column; gap: 16px; min-height: 0; }
+.panel { position: relative; border-radius: var(--r); padding: 16px 18px; }
+.ptitle { font-size: 13px; font-weight: 600; color: var(--dim); margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; letter-spacing: .04em; }
+.ptitle span:last-child { font-weight: 400; }
+.grow-panel { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-    }
+/* ---------- telemetry */
+.gauges { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.gauge { text-align: center; }
+.gauge svg { width: 100%; max-width: 124px; }
+.gauge .lbl { font-size: 12px; color: var(--dim); margin-top: -4px; }
+.kv { display: grid; grid-template-columns: auto 1fr; gap: 8px 12px; font-size: 13.5px; }
+.kv div:nth-child(odd) { color: var(--dim); }
+.kv div:nth-child(even) { text-align: right; font-variant-numeric: tabular-nums; }
+.bar { height: 6px; border-radius: 3px; background: rgba(255, 255, 255, .12); margin: 6px 0 12px; overflow: hidden; }
+.bar i { display: block; height: 100%; border-radius: 3px; background: linear-gradient(90deg, #64d2ff, #a78bfa); transition: width .6s; }
+.svc { display: flex; align-items: center; justify-content: space-between; font-size: 14px; padding: 8px 2px; border-bottom: 1px solid var(--line); }
+.svc:last-child { border-bottom: 0; }
+.svc .st { font-size: 12px; display: flex; gap: 8px; align-items: center; color: var(--dim); }
 
-    .brand-logo {
-      width: 32px;
-      height: 32px;
-      border-radius: 8px;
-      background: linear-gradient(135deg, var(--accent), #2979ff);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 900;
-      font-size: 1.1rem;
-      color: #050b14;
-      box-shadow: 0 0 12px var(--accent-glow);
-    }
+/* ---------- core */
+.core { display: flex; flex-direction: column; min-height: 0; gap: 16px; }
+.reactor-wrap { position: relative; flex: 0 0 auto; display: flex; justify-content: center; align-items: center; height: min(44vh, 450px); }
+#reactor { width: min(44vh, 450px); height: min(44vh, 450px); }
+.state-label { position: absolute; bottom: 6px; left: 0; right: 0; text-align: center; font-size: 15px; font-weight: 500; letter-spacing: .08em; color: var(--text); }
+.side-tick { position: absolute; top: 50%; font-size: 12px; color: var(--dim); line-height: 1.7; padding: 12px 16px; border-radius: 18px; }
+.side-tick.l { left: 0; transform: translateY(-50%); }
+.side-tick.r { right: 0; transform: translateY(-50%); text-align: right; }
+.side-tick b { color: var(--text); font-weight: 500; font-size: 14px; }
+.transcript { flex: 1; min-height: 0; overflow-y: auto; padding: 2px 4px 2px 0; display: flex; flex-direction: column; gap: 10px; }
+.msg { max-width: 82%; padding: 10px 15px; font-size: 16px; line-height: 1.5; border-radius: 20px 20px 20px 6px;
+  background: rgba(255, 255, 255, .14); border: 1px solid rgba(255, 255, 255, .14); white-space: pre-wrap; word-break: break-word; }
+.msg .who { display: none; }
+.msg.user { align-self: flex-end; border-radius: 20px 20px 6px 20px; background: linear-gradient(135deg, #0a84ff, #5e5ce6); border-color: rgba(255, 255, 255, .25); }
+.msg.live { opacity: .65; }
+.msg.sys { align-self: center; border: 0; background: none; font-size: 12.5px; color: var(--dim); padding: 2px; }
+.composer { display: flex; gap: 10px; }
+.composer input { flex: 1; background: rgba(255, 255, 255, .1); border: 1px solid var(--edge); border-radius: 999px; padding: 11px 18px; outline: none; font-size: 15px; }
+.composer input::placeholder, .row input::placeholder { color: var(--dim); }
+.composer input:focus { border-color: rgba(255, 255, 255, .55); background: rgba(255, 255, 255, .16); }
+.btn { background: rgba(255, 255, 255, .14); border: 1px solid var(--edge); color: var(--text); padding: 9px 18px; border-radius: 999px;
+  cursor: pointer; font-size: 14px; font-weight: 500; transition: background .2s, transform .1s; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .3); }
+.btn:hover { background: rgba(255, 255, 255, .24); }
+.btn:active { transform: scale(.97); }
+#sendBtn { background: linear-gradient(135deg, #0a84ff, #5e5ce6); border-color: rgba(255, 255, 255, .3); }
+.btn.warn { color: #ffd0d5; background: rgba(255, 69, 88, .22); border-color: rgba(255, 120, 135, .4); }
+.btn.sm { padding: 5px 13px; font-size: 12.5px; }
 
-    .brand-title {
-      font-size: 1.1rem;
-      font-weight: 700;
-      letter-spacing: 0.04em;
-      background: linear-gradient(90deg, #ffffff, #c7d8ee);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
+/* ---------- right panels */
+.tabs { display: flex; gap: 2px; margin-bottom: 14px; padding: 3px; border-radius: 999px; background: rgba(0, 0, 0, .18); border: 1px solid var(--line); }
+.tab { flex: 1; text-align: center; padding: 7px 0; font-size: 14px; cursor: pointer; color: var(--dim); border-radius: 999px; transition: background .25s, color .25s; }
+.tab.on { color: var(--text); background: rgba(255, 255, 255, .2); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .35), 0 2px 8px rgba(0, 0, 0, .2); }
+.view { display: none; flex: 1; min-height: 0; flex-direction: column; gap: 10px; }
+.view.on { display: flex; }
+.scroll { flex: 1; min-height: 0; overflow-y: auto; padding-right: 4px; }
+.row { display: flex; gap: 8px; align-items: center; }
+.row input[type=search], .row select, .field input[type=text] { flex: 1; background: rgba(255, 255, 255, .1); border: 1px solid var(--edge); border-radius: 12px; padding: 8px 12px; outline: none; }
+select option { color: #111; }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.stat { border-radius: 16px; padding: 10px; text-align: center; background: rgba(255, 255, 255, .08); border: 1px solid var(--line); }
+.stat b { display: block; font-size: 24px; font-weight: 600; }
+.stat span { font-size: 12px; color: var(--dim); }
+.sec { font-size: 12.5px; font-weight: 600; color: var(--dim); margin: 14px 0 6px; }
+.item { border-radius: 14px; padding: 9px 12px; margin-bottom: 7px; background: rgba(255, 255, 255, .08); border: 1px solid var(--line); font-size: 14px; line-height: 1.5; position: relative; }
+.item .q { font-weight: 600; }
+.item .a { color: rgba(255, 255, 255, .85); margin-top: 2px; }
+.item .meta { font-size: 11.5px; color: var(--dim); margin-top: 4px; }
+.item .del { position: absolute; right: 8px; top: 8px; opacity: 0; transition: opacity .2s; }
+.item:hover .del { opacity: 1; }
+.crumbs { font-size: 13px; color: var(--dim); display: flex; flex-wrap: wrap; gap: 4px; }
+.crumbs a { color: var(--cyan-soft); cursor: pointer; text-decoration: none; }
+.file { display: grid; grid-template-columns: 24px 1fr auto; gap: 8px; align-items: center; padding: 8px 10px; cursor: pointer; border-radius: 12px; font-size: 14px; }
+.file:hover { background: rgba(255, 255, 255, .1); }
+.file .ic { opacity: .8; text-align: center; }
+.file .sz { font-size: 12px; color: var(--dim); font-variant-numeric: tabular-nums; }
+.preview { border-radius: 18px; background: rgba(0, 0, 0, .2); border: 1px solid var(--line); min-height: 120px; max-height: 42%; overflow: auto; padding: 12px; display: none; }
+.preview.on { display: block; }
+.preview pre { margin: 0; font-family: var(--mono); font-size: 12px; white-space: pre-wrap; word-break: break-all; }
+.preview img, .preview video { max-width: 100%; display: block; border-radius: 10px; }
+.preview .bar2 { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 13.5px; font-weight: 600; gap: 8px; }
+#logBox { border-radius: 16px; background: rgba(0, 0, 0, .25); padding: 10px 12px; }
+pre.log { margin: 0; font-family: var(--mono); font-size: 11.5px; line-height: 1.55; white-space: pre-wrap; word-break: break-all; color: rgba(225, 235, 255, .85); }
+.field { margin-bottom: 18px; }
+.field label { display: flex; justify-content: space-between; font-size: 14px; color: var(--dim); margin-bottom: 8px; }
+.field label b { color: var(--text); font-weight: 500; }
+input[type=range] { width: 100%; accent-color: #0a84ff; }
+.toast { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); padding: 10px 20px; border-radius: 999px; font-size: 14px; z-index: 60; opacity: 0; transition: opacity .3s; pointer-events: none;
+  background: rgba(40, 44, 60, .7); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid var(--edge); }
+.toast.on { opacity: 1; }
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, .25); border-radius: 3px; }
+.empty { color: var(--dim); font-size: 13.5px; text-align: center; padding: 18px 0; }
 
-    .brand-sub {
-      font-size: 0.75rem;
-      color: var(--text-muted);
-      border: 1px solid rgba(0, 229, 255, 0.25);
-      padding: 2px 8px;
-      border-radius: 6px;
-      background: rgba(0, 229, 255, 0.06);
-    }
+/* school */
+.school-progress { border-radius: 16px; padding: 12px 14px; background: rgba(255, 255, 255, .08); border: 1px solid var(--line); }
+.school-progress b { font-size: 15px; }
+.sc-dim { color: var(--dim); font-size: 12.5px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip2 { font-size: 12.5px; padding: 4px 10px; border-radius: 999px; background: rgba(255, 255, 255, .1); border: 1px solid var(--line); }
+.chip2.ws { border-color: rgba(255, 170, 80, .6); background: rgba(255, 170, 80, .12); }
+.chip2.ws-done { opacity: .6; }
+.lesson { display: grid; grid-template-columns: 46px 1fr auto; gap: 8px; align-items: center; padding: 7px 8px; border-radius: 12px; font-size: 13.5px; }
+.lesson:hover { background: rgba(255, 255, 255, .08); }
+.lesson .t { font-variant-numeric: tabular-nums; color: var(--dim); font-size: 12px; }
+.lesson .s { font-size: 12px; padding: 2px 8px; border-radius: 999px; }
+.lesson .s.ok { background: rgba(76, 217, 138, .22); color: #b8ffd6; }
+.lesson .s.no { background: rgba(255, 204, 102, .2); color: #ffe2a8; }
+.md h1 { font-size: 17px; margin: 4px 0 8px; } .md h2 { font-size: 15px; margin: 14px 0 6px; } .md h3 { font-size: 14px; margin: 12px 0 4px; color: var(--cyan-soft); }
+.md p { margin: 4px 0; line-height: 1.6; font-size: 13.5px; } .md ul { margin: 4px 0 4px 18px; padding: 0; font-size: 13.5px; }
+.md pre { background: rgba(0, 0, 0, .35); border-radius: 10px; padding: 8px 10px; margin: 6px 0; overflow-x: auto; }
+.md code { font-family: var(--mono); font-size: 12px; }
+.md .kw { color: #ff7ab2; } .md .str { color: #ffcc66; } .md .com { color: #8fa1b3; font-style: italic; } .md .num { color: #a6e3a1; }
 
-    .header-actions {
-      display: flex;
-      align-items: center;
-      gap: 0.65rem;
-    }
+/* owner */
+.drop { border: 1.5px dashed rgba(255, 255, 255, .3); border-radius: 16px; padding: 14px; display: grid; gap: 6px; cursor: pointer;
+  background: rgba(255, 255, 255, .05); transition: background .2s, border-color .2s; }
+.drop.over { background: rgba(100, 210, 255, .15); border-color: #64d2ff; }
+.owq { display: grid; gap: 6px; padding: 10px 12px; border-radius: 14px; background: rgba(255, 255, 255, .07); border: 1px solid var(--line); margin-bottom: 8px; }
+.owq .row { gap: 6px; } .owq input { flex: 1; }
+.owq .done { color: #b8ffd6; font-size: 13px; }
+.wk { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; font-size: 11.5px; }
+.wk .d { text-align: center; color: var(--dim); padding: 2px 0; }
+.wk .c { min-height: 30px; display: grid; gap: 3px; align-content: start; }
+.wk .e { border-radius: 8px; padding: 3px 5px; background: rgba(100, 210, 255, .16); border: 1px solid rgba(100, 210, 255, .3); line-height: 1.3; }
+.wk .e.today { background: rgba(167, 139, 250, .25); border-color: rgba(167, 139, 250, .5); }
 
-    .status-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.45rem;
-      padding: 0.3rem 0.75rem;
-      border-radius: 999px;
-      background: var(--bg-card);
-      border: 1px solid var(--border-card);
-      font-size: 0.76rem;
-      color: var(--text-muted);
-    }
+/* agent approval */
+.modal { position: fixed; inset: 0; z-index: 70; display: none; align-items: center; justify-content: center; background: rgba(5, 8, 20, .45); }
+.modal.on { display: flex; }
+.modal .card { width: min(520px, 92vw); border-radius: 28px; padding: 24px 26px; }
+.modal h3 { margin: 0 0 6px; font-size: 19px; font-weight: 600; }
+.modal .why { color: var(--dim); font-size: 13.5px; margin-bottom: 14px; }
+.modal pre { margin: 0 0 18px; padding: 12px 14px; border-radius: 14px; background: rgba(0, 0, 0, .3); font-family: var(--mono); font-size: 13px; white-space: pre-wrap; word-break: break-all; }
+.modal .acts { display: flex; gap: 10px; justify-content: flex-end; }
+.modal .count { color: var(--dim); font-size: 12.5px; margin-right: auto; align-self: center; }
+.msg.step { align-self: center; max-width: 94%; font-family: var(--mono); font-size: 12.5px; background: rgba(0, 0, 0, .22); border-radius: 12px; color: rgba(225, 235, 255, .85); }
+.msg.step .body { display: block; }
+.stats.four { grid-template-columns: repeat(4, 1fr); }
 
-    .status-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--text-dim);
-      transition: all 0.3s;
-    }
-    .status-dot.active { background: var(--accent-green); box-shadow: 0 0 8px var(--accent-green); }
-    .status-dot.warn { background: var(--accent-orange); box-shadow: 0 0 8px var(--accent-orange); }
-    .status-dot.error { background: var(--accent-red); box-shadow: 0 0 8px var(--accent-red); }
+/* board kiosk renders on the CPU: no live backdrop blur (the colour field is already blurred) */
+body.lite .bg { filter: none; background:
+  radial-gradient(38vw 38vw at 18% 14%, rgba(58, 109, 255, .75), transparent 70%),
+  radial-gradient(34vw 34vw at 86% 26%, rgba(176, 77, 255, .7), transparent 70%),
+  radial-gradient(36vw 36vw at 50% 100%, rgba(0, 184, 217, .7), transparent 70%),
+  radial-gradient(22vw 22vw at 74% 88%, rgba(255, 111, 168, .45), transparent 70%); }
+body.lite .bg i { display: none; }
+body.lite .glass, body.lite header, body.lite .panel, body.lite .toast { backdrop-filter: none; -webkit-backdrop-filter: none; background: linear-gradient(145deg, rgba(255, 255, 255, .17), rgba(255, 255, 255, .08)); }
 
-    .state-badge {
-      font-size: 0.8rem;
-      font-weight: 700;
-      padding: 0.28rem 0.85rem;
-      border-radius: 999px;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      background: rgba(41, 121, 255, 0.15);
-      color: #82b1ff;
-      border: 1px solid rgba(41, 121, 255, 0.4);
-      transition: all 0.3s ease;
-    }
-    .state-badge.listen { background: rgba(0, 230, 118, 0.15); color: #69f0ae; border-color: rgba(0, 230, 118, 0.45); box-shadow: 0 0 10px rgba(0, 230, 118, 0.2); }
-    .state-badge.asr { background: rgba(255, 145, 0, 0.15); color: #ffd180; border-color: rgba(255, 145, 0, 0.45); }
-    .state-badge.llm { background: rgba(179, 136, 255, 0.18); color: #d1c4e9; border-color: rgba(179, 136, 255, 0.45); box-shadow: 0 0 12px rgba(179, 136, 255, 0.25); }
-    .state-badge.tts { background: rgba(0, 229, 255, 0.18); color: #84ffff; border-color: rgba(0, 229, 255, 0.45); box-shadow: 0 0 14px var(--accent-glow); }
-
-    /* Dashboard Layout */
-    .dashboard {
-      flex: 1 1 auto;
-      min-height: 0;
-      display: grid;
-      grid-template-columns: 48% 52%;
-      gap: 1rem;
-      padding: 1rem;
-      overflow: hidden;
-    }
-
-    @media (max-width: 960px) {
-      .dashboard {
-        grid-template-columns: 1fr;
-        grid-template-rows: auto 1fr;
-        overflow-y: auto;
-      }
-    }
-
-    .column {
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-      min-height: 0;
-      overflow: hidden;
-    }
-
-    .panel {
-      background: var(--bg-card);
-      backdrop-filter: blur(16px);
-      border: 1px solid var(--border-card);
-      border-radius: var(--radius-md);
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
-      transition: border-color 0.25s;
-    }
-    .panel:hover {
-      border-color: var(--border-accent);
-    }
-
-    .panel-header {
-      flex: 0 0 auto;
-      padding: 0.65rem 1rem;
-      border-bottom: 1px solid var(--border-card);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      background: rgba(255, 255, 255, 0.02);
-    }
-
-    .panel-title {
-      font-size: 0.85rem;
-      font-weight: 700;
-      letter-spacing: 0.05em;
-      color: #d8e5f5;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-
-    .panel-body {
-      flex: 1 1 auto;
-      min-height: 0;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      padding: 0.85rem;
-      gap: 0.75rem;
-    }
-
-    /* Video Monitor Area */
-    .video-panel {
-      flex: 1 1 55%;
-      min-height: 240px;
-    }
-
-    .video-viewport {
-      position: relative;
-      flex: 1 1 auto;
-      min-height: 180px;
-      background: #000;
-      border-radius: var(--radius-sm);
-      overflow: hidden;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border: 1px solid rgba(255, 255, 255, 0.05);
-    }
-
-    .video-img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-      transition: opacity 0.3s;
-    }
-
-    .video-placeholder {
-      position: absolute;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 0.5rem;
-      color: var(--text-muted);
-      font-size: 0.82rem;
-    }
-
-    .video-hud-overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      pointer-events: none;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      padding: 0.75rem;
-    }
-
-    .hud-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .hud-badge {
-      background: rgba(5, 11, 20, 0.75);
-      backdrop-filter: blur(8px);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      border-radius: 6px;
-      padding: 0.25rem 0.55rem;
-      font-size: 0.7rem;
-      font-weight: 600;
-      letter-spacing: 0.04em;
-      color: var(--accent);
-      display: inline-flex;
-      align-items: center;
-      gap: 0.35rem;
-    }
-
-    .hud-bottom {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .hud-meta {
-      background: rgba(5, 11, 20, 0.75);
-      backdrop-filter: blur(8px);
-      border-radius: 6px;
-      padding: 0.2rem 0.5rem;
-      font-size: 0.68rem;
-      color: var(--text-muted);
-    }
-
-    .video-controls {
-      flex: 0 0 auto;
-      display: flex;
-      gap: 0.5rem;
-      align-items: center;
-      flex-wrap: wrap;
-    }
-
-    .input-stream-url {
-      flex: 1 1 180px;
-      background: rgba(8, 12, 20, 0.8);
-      border: 1px solid var(--border-card);
-      border-radius: var(--radius-sm);
-      color: var(--text-main);
-      padding: 0.4rem 0.65rem;
-      font-size: 0.78rem;
-      outline: none;
-      font-family: monospace;
-      transition: border-color 0.2s;
-    }
-    .input-stream-url:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 8px var(--accent-glow);
-    }
-
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.35rem;
-      padding: 0.4rem 0.85rem;
-      font-size: 0.78rem;
-      font-weight: 600;
-      border-radius: var(--radius-sm);
-      border: 1px solid transparent;
-      cursor: pointer;
-      transition: all 0.2s;
-      white-space: nowrap;
-      user-select: none;
-    }
-    .btn-primary {
-      background: linear-gradient(135deg, #00b0ff, #0091ea);
-      color: #fff;
-      box-shadow: 0 2px 8px rgba(0, 176, 255, 0.35);
-    }
-    .btn-primary:hover {
-      background: linear-gradient(135deg, #40c4ff, #00b0ff);
-      box-shadow: 0 4px 14px rgba(0, 176, 255, 0.5);
-    }
-    .btn-secondary {
-      background: rgba(30, 43, 66, 0.7);
-      border-color: var(--border-card);
-      color: var(--text-main);
-    }
-    .btn-secondary:hover {
-      background: rgba(45, 63, 96, 0.85);
-      border-color: var(--border-accent);
-    }
-    .btn-danger {
-      background: rgba(255, 82, 82, 0.18);
-      border-color: rgba(255, 82, 82, 0.4);
-      color: #ff8a80;
-    }
-    .btn-danger:hover {
-      background: rgba(255, 82, 82, 0.3);
-    }
-
-    /* Visual Scene Memory Card */
-    .memory-panel {
-      flex: 1 1 45%;
-      min-height: 180px;
-    }
-
-    .memory-box {
-      background: rgba(11, 17, 28, 0.7);
-      border: 1px dashed rgba(0, 229, 255, 0.3);
-      border-radius: var(--radius-sm);
-      padding: 0.85rem;
-      display: flex;
-      flex-direction: column;
-      gap: 0.6rem;
-      flex: 1 1 auto;
-      overflow-y: auto;
-    }
-
-    .memory-title-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .memory-caption {
-      font-size: 0.95rem;
-      line-height: 1.55;
-      color: #e3f2fd;
-      font-weight: 500;
-    }
-
-    .tags-container {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.4rem;
-      margin-top: 0.25rem;
-    }
-
-    .memory-tag {
-      background: rgba(0, 229, 255, 0.08);
-      border: 1px solid rgba(0, 229, 255, 0.3);
-      color: #80deea;
-      padding: 0.2rem 0.55rem;
-      border-radius: 999px;
-      font-size: 0.72rem;
-      font-weight: 500;
-    }
-
-    /* Waveform & Voice Center */
-    .waveform-card {
-      flex: 0 0 100px;
-      position: relative;
-      background: rgba(11, 16, 26, 0.9);
-      border-radius: var(--radius-md);
-      border: 1px solid var(--border-card);
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-    }
-
-    #waveCanvas {
-      width: 100%;
-      height: 100%;
-      display: block;
-    }
-
-    .wave-overlay {
-      position: absolute;
-      top: 0.5rem;
-      left: 0.85rem;
-      right: 0.85rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      pointer-events: none;
-    }
-
-    .wave-state-text {
-      font-size: 0.75rem;
-      font-weight: 700;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      color: var(--accent);
-      text-shadow: 0 0 8px var(--accent-glow);
-    }
-
-    /* Dialogue Stream */
-    .dialogue-panel {
-      flex: 1 1 auto;
-      min-height: 250px;
-    }
-
-    .chat-container {
-      flex: 1 1 auto;
-      min-height: 0;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 0.85rem;
-      padding-right: 0.35rem;
-    }
-
-    .chat-container::-webkit-scrollbar {
-      width: 5px;
-    }
-    .chat-container::-webkit-scrollbar-thumb {
-      background: rgba(255, 255, 255, 0.15);
-      border-radius: 4px;
-    }
-
-    .chat-msg {
-      display: flex;
-      flex-direction: column;
-      max-width: 88%;
-      animation: fadeIn 0.2s ease forwards;
-    }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(6px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    .chat-msg.user {
-      align-self: flex-end;
-      align-items: flex-end;
-    }
-    .chat-msg.assistant {
-      align-self: flex-start;
-      align-items: flex-start;
-    }
-
-    .msg-header {
-      font-size: 0.7rem;
-      color: var(--text-dim);
-      margin-bottom: 0.25rem;
-      display: flex;
-      align-items: center;
-      gap: 0.35rem;
-    }
-
-    .msg-bubble {
-      padding: 0.65rem 0.95rem;
-      border-radius: 14px;
-      font-size: 0.92rem;
-      line-height: 1.5;
-      word-break: break-word;
-      position: relative;
-    }
-
-    .chat-msg.user .msg-bubble {
-      background: linear-gradient(135deg, #1e88e5, #1565c0);
-      color: #fff;
-      border-bottom-right-radius: 2px;
-      box-shadow: 0 4px 12px rgba(21, 101, 192, 0.3);
-    }
-
-    .chat-msg.assistant .msg-bubble {
-      background: rgba(22, 33, 52, 0.95);
-      border: 1px solid var(--border-card);
-      color: #e1e7ef;
-      border-bottom-left-radius: 2px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
-    }
-
-    .tts-playing-tag {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.3rem;
-      font-size: 0.72rem;
-      color: var(--accent);
-      margin-top: 0.35rem;
-      font-weight: 500;
-    }
-
-    /* Quick Chips & Chat Input */
-    .quick-chips {
-      flex: 0 0 auto;
-      display: flex;
-      gap: 0.4rem;
-      overflow-x: auto;
-      padding-bottom: 0.25rem;
-    }
-    .quick-chips::-webkit-scrollbar { height: 3px; }
-
-    .chip-btn {
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid var(--border-card);
-      color: #b0bec5;
-      padding: 0.3rem 0.65rem;
-      border-radius: 999px;
-      font-size: 0.75rem;
-      cursor: pointer;
-      white-space: nowrap;
-      transition: all 0.2s;
-    }
-    .chip-btn:hover {
-      background: rgba(0, 229, 255, 0.12);
-      border-color: var(--accent);
-      color: #fff;
-    }
-
-    .input-bar {
-      flex: 0 0 auto;
-      display: flex;
-      gap: 0.5rem;
-      align-items: center;
-    }
-
-    .text-input {
-      flex: 1 1 auto;
-      background: rgba(10, 14, 23, 0.85);
-      border: 1px solid var(--border-card);
-      border-radius: var(--radius-sm);
-      color: var(--text-main);
-      padding: 0.55rem 0.85rem;
-      font-size: 0.88rem;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-    .text-input:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 10px var(--accent-glow);
-    }
-
-    /* Footer Telemetry Bar */
-    footer {
-      flex: 0 0 auto;
-      height: 38px;
-      background: rgba(10, 14, 23, 0.95);
-      border-top: 1px solid var(--border-card);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 1.25rem;
-      font-size: 0.72rem;
-      color: var(--text-dim);
-    }
-
-    .telemetry-row {
-      display: flex;
-      align-items: center;
-      gap: 1.25rem;
-    }
-
-    .telemetry-item {
-      display: flex;
-      align-items: center;
-      gap: 0.35rem;
-    }
-    .telemetry-value {
-      color: #b0bec5;
-      font-family: monospace;
-      font-weight: 600;
-    }
-  </style>
+@media (max-width: 1280px) { main { grid-template-columns: 270px 1fr 380px; } }
+@media (max-width: 980px) {
+  html, body { overflow: auto; }
+  .app { height: auto; min-height: 100vh; }
+  main { grid-template-columns: 1fr; }
+  .reactor-wrap { height: 300px; }
+  #reactor { width: 300px; height: 300px; }
+  .side-tick { display: none; }
+  .transcript { max-height: 50vh; }
+  .grow-panel { min-height: 70vh; }
+  header .hide-sm { display: none; }
+}
+.now-card .q{display:flex;align-items:center;gap:8px;font-weight:600}
+.now-dot{width:9px;height:9px;border-radius:50%;background:#2fb36b;box-shadow:0 0 0 0 rgba(47,179,107,.6);animation:nowpulse 1.6s infinite;flex:none}
+.now-dot.idle{background:#9aa0a6;animation:none}
+@keyframes nowpulse{0%{box-shadow:0 0 0 0 rgba(47,179,107,.55)}70%{box-shadow:0 0 0 8px rgba(47,179,107,0)}100%{box-shadow:0 0 0 0 rgba(47,179,107,0)}}
+</style>
 </head>
 <body>
-
-  <!-- Top Header Navigation -->
+<div class="bg"><i></i><i></i><i></i><i></i></div>
+<div class="app">
   <header>
-    <div class="brand">
-      <div class="brand-logo">揽</div>
-      <div class="brand-title">星期一 · M.O.N.D.A.Y.</div>
-      <span class="brand-sub">InternVL3 · P5b vlm_daemon</span>
-    </div>
-    <div class="header-actions">
-      <div class="status-pill">
-        <span id="wsDot" class="status-dot"></span>
-        <span id="wsText">连接中…</span>
-      </div>
-      <div class="status-pill">
-        <span id="vlmDot" class="status-dot"></span>
-        <span id="vlmText">VLM 检测中…</span>
-      </div>
-      <div class="status-pill">
-        <span id="camDot" class="status-dot active"></span>
-        <span id="camText">摄像头就绪</span>
-      </div>
-      <div id="stateBadge" class="state-badge">空闲 IDLE</div>
-      <button id="bargeBtn" class="btn btn-danger" title="打断助手播报">🛑 打断</button>
-    </div>
+    <div class="brand">星期一<small>M.O.N.D.A.Y.</small></div>
+    <div class="chip"><span class="dot" id="wsDot"></span><span id="wsText">连接中</span></div>
+    <div class="chip hide-sm">IPv4 <b id="ipText">—</b></div>
+    <div class="grow"></div>
+    <div class="chip hide-sm" id="dateText"></div>
+    <div id="clock">--:--:--</div>
   </header>
 
-  <!-- Main Dashboard Content -->
-  <main class="dashboard">
-
-    <!-- Left Column: Video & Visual Scene Memory -->
-    <div class="column">
-
-      <!-- Live Video Monitor Panel -->
-      <section class="panel video-panel">
-        <div class="panel-header">
-          <span class="panel-title">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect><line x1="7" y1="2" x2="7" y2="22"></line><line x1="17" y1="2" x2="17" y2="22"></line><line x1="2" y1="12" x2="22" y2="12"></line><line x1="2" y1="7" x2="7" y2="7"></line><line x1="2" y1="17" x2="7" y2="17"></line><line x1="17" y1="17" x2="22" y2="17"></line><line x1="17" y1="7" x2="22" y2="7"></line></svg>
-            实时视频流与画面监控 (Live Video Stream)
-          </span>
-          <span id="videoFps" class="status-pill" style="font-size: 0.7rem;">硬件解码 MPP</span>
+  <main>
+    <!-- left: telemetry -->
+    <section class="col">
+      <div class="panel">
+        <div class="ptitle"><span>系统</span><span id="hostText">—</span></div>
+        <div class="gauges">
+          <div class="gauge"><svg viewBox="0 0 120 120" id="gCpu"></svg><div class="lbl">CPU</div></div>
+          <div class="gauge"><svg viewBox="0 0 120 120" id="gMem"></svg><div class="lbl">内存</div></div>
         </div>
-        <div class="panel-body">
-          <div class="video-viewport">
-            <img id="videoStream" class="video-img" src="/latest_frame.jpg" alt="实时画面" onerror="onVideoError()" onload="onVideoLoaded()" />
-            <div id="videoPlaceholder" class="video-placeholder" style="display: none;">
-              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
-              <span>等待视频流或摄像头抓帧…</span>
-            </div>
-            <div class="video-hud-overlay">
-              <div class="hud-top">
-                <span class="hud-badge"><span class="status-dot active"></span> <span id="streamProtoBadge">MediaMTX 缓存 JPEG</span></span>
-                <span id="motionHud" class="hud-badge" style="color: var(--accent-orange);">动态感知: 0.0</span>
-              </div>
-              <div class="hud-bottom">
-                <span id="frameTimeHud" class="hud-meta">最后刷新: 刚刚</span>
-                <span id="resHud" class="hud-meta">448×448 · RK1828 InternVL3</span>
-              </div>
-            </div>
+      </div>
+      <div class="panel">
+        <div class="ptitle"><span>状态</span><span></span></div>
+        <div class="kv">
+          <div>芯片温度</div><div id="tTemp">—</div>
+          <div>负载</div><div id="tLoad">—</div>
+          <div>运行时间</div><div id="tUp">—</div>
+          <div>存储剩余</div><div id="tDisk">—</div>
+        </div>
+        <div class="bar"><i id="diskBar" style="width:0"></i></div>
+        <div class="kv">
+          <div>上次响应</div><div id="tLat">—</div>
+        </div>
+      </div>
+      <div class="panel grow-panel">
+        <div class="ptitle"><span>服务</span><span></span></div>
+        <div id="svcList" class="scroll"></div>
+      </div>
+    </section>
+
+    <!-- center: reactor + conversation -->
+    <section class="core">
+      <div class="reactor-wrap">
+        <div class="side-tick l glass">状态<br><b id="modeText">待机</b><br><br>声音<br><b id="voiceText">—</b></div>
+        <canvas id="reactor"></canvas>
+        <div class="side-tick r glass">称呼<br><b id="titleText">主人</b><br><br>语速<br><b id="speedText">—</b></div>
+        <div class="state-label" id="stateLabel">待机</div>
+      </div>
+      <div class="panel grow-panel" style="padding-bottom:12px">
+        <div class="ptitle"><span>对话</span><span id="liveText"></span></div>
+        <div class="transcript" id="transcript"></div>
+        <div class="composer" style="margin-top:12px">
+          <input id="chatInput" placeholder="对星期一说点什么，回车发送…" autocomplete="off">
+          <button class="btn" id="sendBtn">发送</button>
+          <button class="btn warn" id="stopBtn" title="停止说话">停止</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- right: memory / files / logs / settings -->
+    <section class="col">
+      <div class="panel grow-panel">
+        <div class="tabs">
+          <div class="tab on" data-v="mem">记忆</div>
+          <div class="tab" data-v="files">文件</div>
+          <div class="tab" data-v="owner">主人</div>
+          <div class="tab" data-v="school">课堂</div>
+          <div class="tab" data-v="prog">进度</div>
+          <div class="tab" data-v="logs">日志</div>
+          <div class="tab" data-v="set">设置</div>
+        </div>
+
+        <div class="view on" id="v-mem">
+          <div class="stats four">
+            <div class="stat"><b id="sS">0</b><span>技能</span></div>
+            <div class="stat"><b id="sK">0</b><span>知识</span></div>
+            <div class="stat"><b id="sF">0</b><span>关于你</span></div>
+            <div class="stat"><b id="sL">0</b><span>纠正</span></div>
           </div>
-          <div class="video-controls">
-            <input id="rtspUrlInput" class="input-stream-url" type="text" placeholder="输入 RTSP 流地址 (例如: rtsp://192.168.1.100:554/live)" />
-            <button id="saveRtspBtn" class="btn btn-secondary">切换流</button>
-            <button id="snapBtn" class="btn btn-primary">📷 拍照识别</button>
-          </div>
+          <div class="row"><input type="search" id="memQ" placeholder="搜索记忆…"><button class="btn sm" id="memRefresh">刷新</button></div>
+          <div class="scroll" id="memList"></div>
         </div>
-      </section>
 
-      <!-- Visual Scene Memory Panel -->
-      <section class="panel memory-panel">
-        <div class="panel-header">
-          <span class="panel-title">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
-            视觉场景工作记忆 (Zero-Wait Visual Memory)
-          </span>
-          <span id="memoryTime" class="status-pill" style="font-size: 0.7rem; color: #80deea;">1秒快速应答库</span>
+        <div class="view" id="v-files">
+          <div class="row">
+            <select id="rootSel"></select>
+            <button class="btn sm" id="upBtn">上传</button>
+            <input type="file" id="upInput" multiple hidden>
+          </div>
+          <div class="crumbs" id="crumbs"></div>
+          <div class="scroll" id="fileList"></div>
+          <div class="preview" id="preview"></div>
         </div>
-        <div class="panel-body">
-          <div class="memory-box">
-            <div class="memory-title-row">
-              <span style="font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase;">当前感知画面描述</span>
-              <span id="activityTag" class="status-pill" style="background: rgba(0, 230, 118, 0.1); color: #69f0ae; border: 1px solid rgba(0,230,118,0.25);">专注编程中</span>
+
+        <div class="view" id="v-owner">
+          <div class="scroll">
+            <div class="drop" id="owDrop">
+              <b>把文件交给星期一</b>
+              <span class="sc-dim">拖到这里或点一下选择：课程表、日程、笔记、资料（txt / md / csv / pdf / Word / Excel / PPT）。<br>
+                她会读懂、记住，课程表会变成她知道的日程。内容会发给老师 DeepSeek 分析，看着像密码密钥的会先遮掉。</span>
+              <input type="file" id="owInput" multiple hidden>
             </div>
-            <div id="memoryCaption" class="memory-caption">
-              “画面中识别到笔记本电脑、键盘、鼠标，面前放有水杯，主人正在电脑前专注编写调试代码。”
+            <div class="sec">她想问你的</div>
+            <div id="owQs"></div>
+            <div class="sec">主人画像</div>
+            <div class="item" id="owProfile"><div class="empty">还不了解主人</div></div>
+            <div class="sec">课程表 / 日程</div>
+            <div id="owSched"></div>
+            <div class="sec">她读过的文件</div>
+            <div id="owFiles"></div>
+            <div class="sec">每天的观察</div>
+            <div id="owDays"></div>
+          </div>
+          <div class="preview" id="owDoc"></div>
+        </div>
+
+        <div class="view" id="v-school">
+          <div class="scroll" id="schoolBox">
+            <div class="item now-card" id="scNow"><div class="empty">读取中…</div></div>
+            <div class="row" style="gap:8px;margin:6px 0 10px">
+              <button class="btn" id="scGoLesson">马上上一节课</button>
+              <button class="btn" id="scGoPractice">马上练一轮</button>
             </div>
-            <div style="font-size: 0.72rem; color: var(--text-dim); margin-top: 0.2rem;">识别目标标签：</div>
-            <div id="memoryTags" class="tags-container">
-              <span class="memory-tag">💻 笔记本电脑</span>
-              <span class="memory-tag">⌨️ 键盘</span>
-              <span class="memory-tag">🖱️ 鼠标</span>
-              <span class="memory-tag">🥛 水杯</span>
-              <span class="memory-tag">👨‍💻 专注编程</span>
+            <div class="sec">项目（她自己做，做完或卡住了会说）</div>
+            <div class="row" style="gap:8px;margin:4px 0 8px"><input type="search" id="pjGoal" placeholder="给她一个目标，比如：写一个……"><button class="btn sm" id="pjStart">开始</button></div>
+            <div id="pjList"></div>
+            <div id="pjSteps"></div>
+            <div class="school-progress">
+              <div class="row" style="justify-content:space-between"><b id="scTitle">课程进度</b><span class="sc-dim" id="scCount"></span></div>
+              <div class="bar"><i id="scBar" style="width:0"></i></div>
+              <div class="sc-dim" id="scNext"></div>
             </div>
+            <div class="sec">今天的自省</div>
+            <div class="item" id="scReview"><div class="empty">还没有自省</div></div>
+            <div class="sec">排队要补的短板</div>
+            <div id="scPending" class="chips"></div>
+            <div class="sec">我给自己定的规矩</div>
+            <div class="item" id="scRules"><div class="empty">还没有</div></div>
+            <div class="sec">自我优化记录</div>
+            <div id="scTune"></div>
+            <div class="sec">上课记录</div>
+            <div id="scHistory"></div>
+            <div class="sec">课堂笔记</div>
+            <div id="scNotes"></div>
           </div>
+          <div class="preview" id="scNote"></div>
         </div>
-      </section>
 
-    </div>
-
-    <!-- Right Column: Voice Waveform & Dialogue Stream -->
-    <div class="column">
-
-      <!-- Dynamic Waveform Visualizer -->
-      <section class="waveform-card">
-        <canvas id="waveCanvas"></canvas>
-        <div class="wave-overlay">
-          <span id="waveStateText" class="wave-state-text">AUDIO IDLE</span>
-          <span style="font-size: 0.7rem; color: var(--text-dim);">Silero-VAD + Matcha-TTS</span>
-        </div>
-      </section>
-
-      <!-- Real-Time Dialogue Panel -->
-      <section class="panel dialogue-panel">
-        <div class="panel-header">
-          <span class="panel-title">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-            实时对话与神经中枢 (Real-Time Dialogue Stream)
-          </span>
-          <button id="clearChatBtn" class="btn btn-secondary" style="padding: 0.2rem 0.55rem; font-size: 0.7rem;">清空对话</button>
-        </div>
-        <div class="panel-body">
-
-          <!-- Chat messages stream -->
-          <div id="chatBox" class="chat-container">
-            <div class="chat-msg assistant">
-              <div class="msg-header">星期一 · 系统提示</div>
-              <div class="msg-bubble">
-                随时待命，主人请吩咐。您可以通过板载麦克风直接对我说话，或在下方输入指令。
-              </div>
+        <div class="view" id="v-prog">
+          <div class="scroll">
+            <div class="school-progress">
+              <div class="row" style="justify-content:space-between"><b id="pgTitle">自我微调（LoRA）</b><span class="sc-dim" id="pgUpd"></span></div>
+              <div class="bar"><i id="pgBar" style="width:0"></i></div>
+              <div class="sc-dim" id="pgStage"></div>
             </div>
+            <div class="sec">老师花费（DeepSeek）</div>
+            <div class="item" id="pgSpend"><div class="empty">还没有记录</div></div>
+            <div class="sec">蒸馏老师（成批造训练数据）</div>
+            <div class="item" id="pgDistill"><div class="empty">还没开始</div></div>
+            <div class="sec">流程</div>
+            <div id="pgSteps"></div>
+            <div class="sec">训练效果</div>
+            <div id="pgVers"></div>
+            <div class="sec">工作报告</div>
+            <div id="pgReports"></div>
           </div>
-
-          <!-- Quick Action Chips -->
-          <div class="quick-chips">
-            <button class="chip-btn" data-query="桌面上有什么？">🔍 桌面上有什么？</button>
-            <button class="chip-btn" data-query="我正在干什么？">👀 我在干什么？</button>
-            <button class="chip-btn" data-query="重新看看桌子">📸 重新抓拍分析</button>
-            <button class="chip-btn" data-query="自我介绍一下">🤖 自我介绍</button>
-            <button class="chip-btn" data-query="今天天气怎么样">🌤️ 天气查询</button>
-          </div>
-
-          <!-- Direct Chat Input Bar -->
-          <div class="input-bar">
-            <input id="chatInput" class="text-input" type="text" placeholder="输入对话指令 (例如：桌面上有什么？)..." />
-            <button id="sendBtn" class="btn btn-primary">发送</button>
-          </div>
-
+          <div class="preview" id="pgDoc"></div>
         </div>
-      </section>
 
-    </div>
+        <div class="view" id="v-logs">
+          <div class="row">
+            <select id="logSel"><option value="orchestrator">核心 orchestrator</option><option value="tts_daemon">语音合成 tts_daemon</option><option value="llm_daemon">大模型 llm_daemon</option><option value="selfheal">自愈 selfheal</option><option value="backup">备份 backup</option></select>
+            <label class="chip"><input type="checkbox" id="logAuto" checked> 自动刷新</label>
+          </div>
+          <div class="scroll" id="logBox"><pre class="log" id="logText"></pre></div>
+        </div>
 
+        <div class="view" id="v-set">
+          <div class="scroll">
+            <div class="field"><label>语速 <b id="spdVal">—</b></label><input type="range" id="spd" min="0.6" max="1.6" step="0.05"></div>
+            <div class="field"><label>音量 <b id="volVal">—</b></label><input type="range" id="vol" min="0" max="100" step="1"></div>
+            <div class="field"><label>怎么称呼你</label>
+              <div class="row"><input type="text" id="titleIn" maxlength="8"><button class="btn sm" id="titleSave">保存</button></div></div>
+            <div class="field"><label>声音</label><div class="row"><select id="voiceSel"></select></div></div>
+            <div class="field"><label>家里的设备</label><div class="row"><a class="btn sm" id="devLink" target="_blank" style="text-decoration:none">打开设备页面</a></div></div>
+          </div>
+        </div>
+      </div>
+    </section>
   </main>
+</div>
+<div class="toast" id="toast"></div>
+<div class="modal" id="confirmBox">
+  <div class="card glass">
+    <h3 id="cfTitle">星期一想做一件事，需要你同意</h3>
+    <div class="why" id="cfWhy"></div>
+    <pre id="cfAction"></pre>
+    <div class="acts"><span class="count" id="cfCount"></span>
+      <button class="btn warn" id="cfNo">拒绝</button><button class="btn" id="cfAlways">允许并记住</button><button class="btn" id="cfTask">这次都允许</button><button class="btn" id="cfYes" style="background:linear-gradient(135deg,#0a84ff,#5e5ce6)">允许</button></div>
+  </div>
+</div>
 
-  <!-- Bottom Telemetry Bar -->
-  <footer>
-    <div class="telemetry-row">
-      <div class="telemetry-item">
-        <span>ASR 引擎:</span>
-        <span id="asrBackendVal" class="telemetry-value">SenseVoice</span>
-      </div>
-      <div class="telemetry-item">
-        <span>首字 TTFT:</span>
-        <span id="ttftVal" class="telemetry-value">180ms</span>
-      </div>
-      <div class="telemetry-item">
-        <span>首音频播报:</span>
-        <span id="ttsPlayVal" class="telemetry-value">220ms</span>
-      </div>
-    </div>
-    <div class="telemetry-row">
-      <div class="telemetry-item">
-        <span>端到端延时:</span>
-        <span id="totalLatencyVal" class="telemetry-value" style="color: var(--accent-green);">510ms</span>
-      </div>
-      <div class="telemetry-item">
-        <span>端侧模型:</span>
-        <span id="edgeModelVal" class="telemetry-value">InternVL3 · vlm_daemon</span>
-      </div>
-    </div>
-  </footer>
+<script>
+"use strict";
+const $ = (id) => document.getElementById(id);
+const host = location.hostname || "127.0.0.1";
+if (/^(127\.0\.0\.1|localhost)$/.test(host) || /[?&]lite/.test(location.search)) document.body.classList.add("lite");
+const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+function toast(t) { const x = $("toast"); x.textContent = t; x.classList.add("on"); clearTimeout(toast._t); toast._t = setTimeout(() => x.classList.remove("on"), 2200); }
+function fmtBytes(n) { if (n == null) return "—"; const u = ["B", "K", "M", "G", "T"]; let i = 0; while (n >= 1024 && i < 4) { n /= 1024; i++; } return (i ? n.toFixed(1) : n) + u[i]; }
+function fmtUp(s) { s = Math.floor(s); const d = Math.floor(s / 86400), h = Math.floor(s % 86400 / 3600), m = Math.floor(s % 3600 / 60); return (d ? d + "天 " : "") + h + "时 " + m + "分"; }
+function fmtTime(t) { if (!t) return ""; const d = new Date(t * 1000); return d.toLocaleDateString("zh-CN") + " " + d.toTimeString().slice(0, 5); }
+async function api(path, opt) { const r = await fetch(path, opt); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || r.statusText); return j; }
 
-  <script>
-    // Dynamic WebSocket host resolution (works seamlessly on board localhost and LAN IP)
-    const host = window.location.hostname || "127.0.0.1";
-    const WS_URL = "ws://" + host + ":8765/ws";
+/* ---------------- clock */
+const WD = ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"];
+setInterval(() => { const d = new Date(); $("clock").textContent = d.toTimeString().slice(0, 8); $("dateText").textContent = d.toLocaleDateString("zh-CN") + " " + WD[d.getDay()]; }, 500);
 
-    // DOM Elements
-    const wsDot = document.getElementById("wsDot");
-    const wsText = document.getElementById("wsText");
-    const vlmDot = document.getElementById("vlmDot");
-    const vlmText = document.getElementById("vlmText");
-    const edgeModelVal = document.getElementById("edgeModelVal");
-    const camDot = document.getElementById("camDot");
-    const camText = document.getElementById("camText");
-    const stateBadge = document.getElementById("stateBadge");
-    const waveStateText = document.getElementById("waveStateText");
-    const videoStream = document.getElementById("videoStream");
-    const videoPlaceholder = document.getElementById("videoPlaceholder");
-    const streamProtoBadge = document.getElementById("streamProtoBadge");
-    const motionHud = document.getElementById("motionHud");
-    const frameTimeHud = document.getElementById("frameTimeHud");
-    const rtspUrlInput = document.getElementById("rtspUrlInput");
-    const saveRtspBtn = document.getElementById("saveRtspBtn");
-    const snapBtn = document.getElementById("snapBtn");
-    const memoryCaption = document.getElementById("memoryCaption");
-    const memoryTags = document.getElementById("memoryTags");
-    const memoryTime = document.getElementById("memoryTime");
-    const activityTag = document.getElementById("activityTag");
-    const chatBox = document.getElementById("chatBox");
-    const chatInput = document.getElementById("chatInput");
-    const sendBtn = document.getElementById("sendBtn");
-    const clearChatBtn = document.getElementById("clearChatBtn");
-    const bargeBtn = document.getElementById("bargeBtn");
-    const ttftVal = document.getElementById("ttftVal");
-    const ttsPlayVal = document.getElementById("ttsPlayVal");
-    const totalLatencyVal = document.getElementById("totalLatencyVal");
+/* ---------------- gauges */
+function gauge(svgId, pct, text) {
+  const svg = $(svgId), r = 48, c = 2 * Math.PI * r, p = Math.max(0, Math.min(100, pct || 0));
+  const col = p > 85 ? "#ff6b7a" : p > 65 ? "#ffcc66" : "#64d2ff";
+  svg.innerHTML =
+    `<circle cx="60" cy="60" r="${r}" fill="none" stroke="rgba(255,255,255,.14)" stroke-width="7"/>` +
+    `<circle cx="60" cy="60" r="${r}" fill="none" stroke="${col}" stroke-width="7" stroke-linecap="round" ` +
+    `stroke-dasharray="${c * p / 100} ${c}" transform="rotate(-90 60 60)" style="filter:drop-shadow(0 0 4px ${col});transition:stroke-dasharray .6s"/>` +
+    `<circle cx="60" cy="60" r="38" fill="none" stroke="rgba(255,255,255,.18)" stroke-width="1" stroke-dasharray="2 4"/>` +
+    `<text x="60" y="66" text-anchor="middle" fill="#fff" font-family="-apple-system,system-ui,sans-serif" font-size="21" font-weight="300"></text>`;
+  svg.querySelector("text").textContent = text;
+}
 
-    // State Variables
-    let ws = null;
-    let userTitle = "主人";  // how the assistant addresses the user (settings / "以后叫我…")
-    let currentState = "IDLE";
-    let activeAssistantMsgEl = null;
-    let activeTokenSpan = null;
-    let activeTtsSpan = null;
-    let videoRefreshTimer = null;
+/* ---------------- system polling */
+async function pollSystem() {
+  try {
+    const s = await api("/api/system");
+    gauge("gCpu", s.cpu_percent, Math.round(s.cpu_percent) + "%");
+    const memPct = s.mem_total ? 100 * (1 - s.mem_available / s.mem_total) : 0;
+    gauge("gMem", memPct, Math.round(memPct) + "%");
+    $("hostText").textContent = s.hostname;
+    $("ipText").textContent = (s.ipv4 || []).join(" · ") || "—";
+    $("tTemp").textContent = s.temp_c != null ? s.temp_c + " °C" : "—";
+    $("tTemp").style.color = s.temp_c > 75 ? "var(--red)" : "";
+    $("tLoad").textContent = (s.load || []).map((x) => x.toFixed(2)).join(" / ");
+    $("tUp").textContent = fmtUp(s.uptime_s);
+    $("tDisk").textContent = fmtBytes(s.disk_free) + " / " + fmtBytes(s.disk_total);
+    $("diskBar").style.width = (s.disk_total ? 100 * (1 - s.disk_free / s.disk_total) : 0) + "%";
+    const list = $("svcList"); list.textContent = "";
+    for (const v of s.services) {
+      const row = el("div", "svc"); row.append(el("span", null, v.label));
+      const st = el("span", "st"); const d = el("span", "dot" + (v.state === "active" ? " ok" : ""));
+      st.append(el("span", null, v.state === "active" ? "运行中" : v.state === "inactive" ? "已停止" : v.state === "failed" ? "出错" : v.state), d); row.append(st); list.append(row);
+    }
+  } catch (e) { /* server restarting */ }
+}
+pollSystem(); setInterval(pollSystem, 2500);
 
-    const STATE_LABELS = {
-      IDLE: { text: "空闲 IDLE", class: "" },
-      LISTEN: { text: "聆听中 LISTEN", class: "listen" },
-      ASR: { text: "识别中 ASR", class: "asr" },
-      LLM: { text: "思考中 LLM", class: "llm" },
-      TTS: { text: "播放中 TTS", class: "tts" },
-      ERROR: { text: "异常 ERROR", class: "" },
+/* ---------------- reactor */
+const STATES = {
+  IDLE: { label: "待机", energy: .25, speed: .35 },
+  LISTEN: { label: "在听", energy: .55, speed: .7 },
+  ASR: { label: "识别中", energy: .8, speed: 1.4 },
+  LLM: { label: "思考中", energy: .7, speed: 2.2 },
+  TTS: { label: "说话中", energy: 1, speed: 1.1 },
+};
+let agentState = "IDLE", stateSince = performance.now();
+const cv = $("reactor"), cx = cv.getContext("2d");
+let energy = .25, phase = 0, last = performance.now();
+function resize() { const r = cv.getBoundingClientRect(), dpr = window.devicePixelRatio || 1; cv.width = r.width * dpr; cv.height = r.height * dpr; cx.setTransform(dpr, 0, 0, dpr, 0, 0); }
+window.addEventListener("resize", resize); resize();
+// Siri-like orb: a glass sphere with coloured light blobs swirling inside; livelier when speaking/thinking
+const BLOBS = [
+  { c: [10, 132, 255], r: .62, sp: 1.0, off: 0 },
+  { c: [191, 90, 242], r: .55, sp: -1.3, off: 2.1 },
+  { c: [255, 55, 95], r: .48, sp: 1.7, off: 4.2 },
+  { c: [100, 210, 255], r: .5, sp: -0.8, off: 1.1 },
+  { c: [48, 209, 88], r: .38, sp: 2.1, off: 3.3 },
+];
+function frame(now) {
+  requestAnimationFrame(frame);
+  // the board's kiosk renders on the CPU: ~30 fps while active, ~12 fps at rest
+  if (now - last < (agentState === "IDLE" || agentState === "LISTEN" ? 80 : 32)) return;
+  const dt = Math.min(.08, (now - last) / 1000); last = now;
+  const st = STATES[agentState] || STATES.IDLE, t = now / 1000;
+  const talk = agentState === "TTS" ? .5 + .5 * Math.abs(Math.sin(t * 7.3) * Math.sin(t * 2.9)) : 0;
+  energy += ((agentState === "TTS" ? .6 + .4 * talk : st.energy) - energy) * Math.min(1, dt * 5);
+  phase += dt * st.speed;
+  const W = cv.clientWidth, H = cv.clientHeight, R = Math.min(W, H) / 2 * .78 * (1 + .05 * energy);
+  cx.clearRect(0, 0, W, H); cx.save(); cx.translate(W / 2, H / 2);
+  // outer halo
+  const halo = cx.createRadialGradient(0, 0, R * .8, 0, 0, R * 1.25);
+  halo.addColorStop(0, `rgba(120,160,255,${.25 * energy})`); halo.addColorStop(1, "rgba(120,160,255,0)");
+  cx.fillStyle = halo; cx.beginPath(); cx.arc(0, 0, R * 1.25, 0, Math.PI * 2); cx.fill();
+  // sphere body
+  cx.save(); cx.beginPath(); cx.arc(0, 0, R, 0, Math.PI * 2); cx.clip();
+  cx.fillStyle = "rgba(10,14,40,.55)"; cx.fillRect(-R, -R, 2 * R, 2 * R);
+  cx.globalCompositeOperation = "lighter";
+  for (const b of BLOBS) {
+    const a = phase * b.sp + b.off, wob = .28 + .22 * energy;
+    const x = Math.cos(a) * R * wob, y = Math.sin(a * 1.3 + b.off) * R * wob;
+    const rr = R * b.r * (.85 + .3 * energy + .08 * Math.sin(t * 3 + b.off));
+    const g = cx.createRadialGradient(x, y, 0, x, y, rr);
+    g.addColorStop(0, `rgba(${b.c},${.55 + .35 * energy})`); g.addColorStop(1, `rgba(${b.c},0)`);
+    cx.fillStyle = g; cx.beginPath(); cx.arc(x, y, rr, 0, Math.PI * 2); cx.fill();
+  }
+  cx.globalCompositeOperation = "source-over";
+  // glass highlights
+  const hl = cx.createLinearGradient(0, -R, 0, R);
+  hl.addColorStop(0, "rgba(255,255,255,.35)"); hl.addColorStop(.35, "rgba(255,255,255,.04)"); hl.addColorStop(1, "rgba(255,255,255,0)");
+  cx.fillStyle = hl; cx.beginPath(); cx.ellipse(0, -R * .42, R * .72, R * .5, 0, 0, Math.PI * 2); cx.fill();
+  cx.restore();
+  // rim
+  cx.beginPath(); cx.arc(0, 0, R, 0, Math.PI * 2); cx.lineWidth = 1.5;
+  const rim = cx.createLinearGradient(-R, -R, R, R); rim.addColorStop(0, "rgba(255,255,255,.7)"); rim.addColorStop(.5, "rgba(255,255,255,.1)"); rim.addColorStop(1, "rgba(255,255,255,.45)");
+  cx.strokeStyle = rim; cx.stroke();
+  // speaking ripples
+  if (agentState === "TTS" || agentState === "LISTEN") {
+    for (let k = 0; k < 2; k++) {
+      const f = ((t * (agentState === "TTS" ? .9 : .5)) + k / 2) % 1;
+      cx.beginPath(); cx.arc(0, 0, R * (1 + .22 * f), 0, Math.PI * 2);
+      cx.strokeStyle = `rgba(255,255,255,${.35 * (1 - f) * energy})`; cx.lineWidth = 1.2; cx.stroke();
+    }
+  }
+  cx.restore();
+}
+requestAnimationFrame(frame);
+function setState(s) {
+  s = String(s || "IDLE").toUpperCase(); if (!STATES[s]) s = "IDLE";
+  agentState = s; stateSince = performance.now();
+  $("stateLabel").textContent = STATES[s].label; $("modeText").textContent = STATES[s].label;
+}
+
+/* ---------------- transcript */
+const tr = $("transcript");
+let liveUser = null, liveBot = null, lastLocal = { text: "", at: 0 };
+function scrollDown() { tr.scrollTop = tr.scrollHeight; }
+function addMsg(role, text, live) {
+  const m = el("div", "msg " + role + (live ? " live" : ""));
+  if (role !== "sys") m.append(el("span", "who", role === "user" ? "YOU" : "MONDAY"));
+  m.append(el("span", "body", text)); tr.append(m);
+  while (tr.children.length > 120) tr.firstChild.remove();
+  scrollDown(); return m;
+}
+function setBody(m, text) { m.querySelector(".body").textContent = text; scrollDown(); }
+function userSaid(text, final) {
+  if (Date.now() - lastLocal.at < 4000) return;  // typed here: already shown (the core echoes it normalized)
+  if (!liveUser) liveUser = addMsg("user", text, !final); else setBody(liveUser, text);
+  if (final) { liveUser.classList.remove("live"); liveUser = null; liveBot = null; }
+}
+function botToken(t) { if (!liveBot) liveBot = addMsg("bot", "", true); setBody(liveBot, liveBot.querySelector(".body").textContent + t); }
+function botFinal(t) { if (!liveBot) liveBot = addMsg("bot", t); else setBody(liveBot, t); liveBot.classList.remove("live"); liveBot = null; }
+
+/* ---------------- websocket */
+let ws = null, settings = null;
+function send(obj) { if (ws && ws.readyState === 1) { ws.send(JSON.stringify(obj)); return true; } toast("还没连上星期一"); return false; }
+function connect() {
+  ws = new WebSocket((location.protocol === "https:" ? "wss://" : "ws://") + (location.host || "127.0.0.1") + "/ws");
+  ws.onopen = () => { $("wsDot").classList.add("ok"); $("wsText").textContent = "在线"; send({ type: "settings_get" }); send({ type: "get_status" }); };
+  ws.onclose = () => { $("wsDot").classList.remove("ok"); $("wsText").textContent = "离线，重连中"; setTimeout(connect, 2000); };
+  ws.onerror = () => ws.close();
+  ws.onmessage = (ev) => { let m; try { m = JSON.parse(ev.data); } catch { return; } onEvent(m); };
+}
+function onEvent(m) {
+  switch (m.type) {
+    case "state": setState(m.value); if (m.value === "LISTEN") $("liveText").textContent = ""; break;
+    case "status_response": setState(m.state); break;
+    case "asr_partial": userSaid(m.text || "", false); $("liveText").textContent = "听到…"; break;
+    case "asr_final": userSaid(m.text || "", true); $("liveText").textContent = ""; break;
+    case "llm_token": botToken(m.text || ""); break;
+    case "reply_final": botFinal(m.text || ""); break;
+    case "barge_in": $("liveText").textContent = "被打断"; break;
+    case "latency": if (m.vad_to_first_play_ms != null) $("tLat").textContent = (m.vad_to_first_play_ms / 1000).toFixed(2) + " s"; break;
+    case "error": addMsg("sys", "⚠ " + (m.code || m.message || "出错了")); break;
+    case "settings_snapshot": applySettings(m); break;
+    case "settings_applied": send({ type: "settings_get" }); break;
+    case "agent_start": addMsg("sys", "开始任务：" + m.task); break;
+    case "agent_step": { const st = addMsg("step", `▸ ${m.purpose || ""}
+$ ${m.action}  →  ${m.code}
+${m.output || ""}`); st.classList.remove("live"); break; }
+    case "agent_confirm": showConfirm(m); break;
+    case "agent_confirm_closed": if (confirmId === m.id) hideConfirm(); break;
+    case "agent_done": toast(m.ok ? (m.learned ? "完成，学会了一个新技能" : "完成") : "任务没做成"); if (m.learned) loadMemory(); break;
+    case "user_title": $("titleText").textContent = m.value; $("titleIn").value = m.value; break;
+    case "voice_settings": $("voiceText").textContent = m.label || m.voice_id; $("speedText").textContent = Number(m.speed).toFixed(2) + "×"; break;
+  }
+}
+connect();
+function chat() {
+  const t = $("chatInput").value.trim(); if (!t) return;
+  if (send({ type: "chat", text: t })) { addMsg("user", t); lastLocal = { text: t, at: Date.now() }; liveBot = null; $("chatInput").value = ""; }
+}
+$("sendBtn").onclick = chat;
+$("chatInput").addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.isComposing) chat(); });
+$("stopBtn").onclick = () => send({ type: "stop" });
+addMsg("sys", "跟星期一说话，或者在下面打字");
+
+/* ---------------- agent approval */
+let confirmId = null, confirmT = null;
+function showConfirm(m) {
+  const danger = m.risk === "danger";
+  confirmId = m.id; $("cfWhy").textContent = (m.purpose ? m.purpose + " · " : "") + (danger ? "⚠ 有风险：" : "需要确认：") + (m.why || "")
+    + (danger ? "。执行前会先存一个备份节点，每次都要确认。" : "");
+  $("cfTitle").textContent = danger ? "星期一想做一件有风险的事" : "星期一想做一件事，需要你同意";
+  $("cfAlways").style.display = m.rememberable === false || danger ? "none" : "";
+  $("cfTask").style.display = danger ? "none" : "";
+  $("cfAction").textContent = m.action; $("confirmBox").classList.add("on");
+  let left = 90; clearInterval(confirmT);
+  const tick = () => { $("cfCount").textContent = left + " 秒内不确认就不做"; if (--left < 0) hideConfirm(); };
+  tick(); confirmT = setInterval(tick, 1000);
+}
+function hideConfirm() { $("confirmBox").classList.remove("on"); clearInterval(confirmT); confirmId = null; }
+function answerConfirm(ok, remember, task) { if (confirmId) send({ type: "agent_approve", id: confirmId, ok, remember: !!remember, task: !!task }); hideConfirm(); }
+$("cfYes").onclick = () => answerConfirm(true);
+$("cfAlways").onclick = () => answerConfirm(true, true);
+$("cfTask").onclick = () => answerConfirm(true, false, true);
+$("cfNo").onclick = () => answerConfirm(false);
+
+/* ---------------- tabs */
+for (const t of document.querySelectorAll(".tab")) t.onclick = () => {
+  document.querySelectorAll(".tab").forEach((x) => x.classList.toggle("on", x === t));
+  document.querySelectorAll(".view").forEach((v) => v.classList.toggle("on", v.id === "v-" + t.dataset.v));
+  if (t.dataset.v === "mem") loadMemory(); if (t.dataset.v === "files") loadFiles(); if (t.dataset.v === "logs") loadLogs();
+  if (t.dataset.v === "school") loadSchool();
+  if (t.dataset.v === "owner") loadOwner();
+  if (t.dataset.v === "prog") loadProgress();
+};
+
+/* ---------------- memory */
+async function loadMemory() {
+  const box = $("memList");
+  try {
+    const d = await api("/api/memory?limit=200&q=" + encodeURIComponent($("memQ").value.trim()));
+    $("sS").textContent = d.stats.skills || 0; $("sK").textContent = d.stats.knowledge; $("sF").textContent = d.stats.facts; $("sL").textContent = d.stats.lessons;
+    box.textContent = "";
+    const section = (title, rows, render) => { box.append(el("div", "sec", title)); if (!rows.length) box.append(el("div", "empty", "暂无")); rows.forEach((r) => box.append(render(r))); };
+    const item = (table, id, parts, meta) => {
+      const it = el("div", "item"); parts.forEach(([c, t]) => it.append(el("div", c, t))); if (meta) it.append(el("div", "meta", meta));
+      if (!table) return it;
+      const g = table === "grants";
+      const del = el("button", "btn sm warn del", g ? "撤销" : "删除"); del.onclick = async () => {
+        if (!confirm(g ? "撤销这条授权？以后再做会重新问你。" : "删除这条记忆？")) return;
+        try { await api("/api/memory/delete", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ table, id }) }); toast(g ? "已撤销" : "已删除"); loadMemory(); } catch (e) { toast(e.message); }
+      }; it.append(del); return it;
     };
+    section("学会的技能", d.skills || [], (r) => item("skills", r.id, [["q", r.task],
+      ["a", (r.steps || []).map((st, i) => `${i + 1}. ${st.purpose || ""}　${st.tool === "ssh" ? "ssh " + st.host + " " : ""}${st.cmd || st.name || ""}`).join("\n")]],
+      `成功 ${r.successes} 次 · 失败 ${r.failures} 次${r.notes ? " · " + r.notes : ""} · ${fmtTime(r.created)}`));
+    section("允许过、不再询问的操作", d.grants || [], (r) => item("grants", r.id, [["a", (r.tool === "ssh" ? "ssh " + r.host + "　" : "板子上　") + r.cmd]],
+      `记住于 ${fmtTime(r.created)} · 用过 ${r.uses || 0} 次`));
+    section("备份节点（可回退）", d.snapshots || [], (r) => item(null, r.id, [["a", (r.good ? "✓ 稳定　" : "") + r.id]],
+      `${r.reason || r.label || ""} · ${Math.round((r.size || 0) / 1024)} KB · ${fmtTime(r.created)}`));
+    section("关于你", d.facts, (r) => item("facts", r.id, [["a", r.fact]], fmtTime(r.created)));
+    section("学到的知识", d.knowledge, (r) => item("knowledge", r.id, [["q", r.question], ["a", r.answer]],
+      `${r.source || ""} · 用过 ${r.uses || 0} 次 · ${fmtTime(r.created)}${r.expires ? " · 到期 " + fmtTime(r.expires) : ""}`));
+    section("被纠正过", d.lessons, (r) => item("lessons", r.id, [["q", r.question], ["a", "✗ " + (r.wrong || "")], ["a", "✓ " + (r.right || "")]], fmtTime(r.created)));
+  } catch (e) { box.textContent = ""; box.append(el("div", "empty", e.message)); }
+}
+let memT; $("memQ").addEventListener("input", () => { clearTimeout(memT); memT = setTimeout(loadMemory, 300); });
+$("memRefresh").onclick = loadMemory;
+loadMemory();
 
-    // Canvas Audio Visualizer
-    const canvas = document.getElementById("waveCanvas");
-    const ctx = canvas.getContext("2d");
-    let wavePhase = 0;
-
-    function resizeCanvas() {
-      canvas.width = canvas.parentElement.clientWidth;
-      canvas.height = canvas.parentElement.clientHeight;
+/* ---------------- files */
+let fsRoot = "files", fsPath = "", fsWritable = false;
+async function loadRoots() {
+  const roots = await api("/api/roots"); const sel = $("rootSel"); sel.textContent = "";
+  roots.forEach((r) => { const o = el("option", null, r.label + (r.writable ? "" : "（只读）")); o.value = r.id; sel.append(o); });
+  sel.value = fsRoot; sel.onchange = () => { fsRoot = sel.value; fsPath = ""; loadFiles(); };
+}
+const ICON = (e) => e.dir ? "▸" : /^image\//.test(e.type) ? "◈" : /^audio\//.test(e.type) ? "♪" : /^video\//.test(e.type) ? "▶" : "≡";
+async function loadFiles() {
+  const list = $("fileList");
+  try {
+    const d = await api(`/api/files?root=${fsRoot}&path=${encodeURIComponent(fsPath)}`);
+    fsWritable = d.writable; $("upBtn").style.display = d.writable ? "" : "none";
+    const cr = $("crumbs"); cr.textContent = "";
+    const parts = d.path ? d.path.split("/") : [];
+    const home = el("a", null, $("rootSel").selectedOptions[0]?.textContent.replace("（只读）", "") || "根目录"); home.onclick = () => { fsPath = ""; loadFiles(); }; cr.append(home);
+    parts.forEach((p, i) => { cr.append(el("span", null, "/")); const a = el("a", null, p); a.onclick = () => { fsPath = parts.slice(0, i + 1).join("/"); loadFiles(); }; cr.append(a); });
+    list.textContent = "";
+    if (!d.entries.length) list.append(el("div", "empty", d.writable ? "空的 · 点「上传」放文件进来" : "空的"));
+    for (const e of d.entries) {
+      const row = el("div", "file"); row.append(el("span", "ic", ICON(e)), el("span", null, e.name), el("span", "sz", e.dir ? "" : fmtBytes(e.size)));
+      const rel = (d.path ? d.path + "/" : "") + e.name;
+      row.onclick = () => { if (e.dir) { fsPath = rel; loadFiles(); } else preview(rel, e); };
+      list.append(row);
     }
-    window.addEventListener("resize", resizeCanvas);
-    resizeCanvas();
+  } catch (e) { list.textContent = ""; list.append(el("div", "empty", e.message)); }
+}
+async function preview(rel, e) {
+  const box = $("preview"); box.textContent = ""; box.classList.add("on");
+  const url = `/api/file?root=${fsRoot}&path=${encodeURIComponent(rel)}`;
+  const bar = el("div", "bar2"); bar.append(el("span", null, e.name));
+  const acts = el("span", "row");
+  const dl = el("a", "btn sm", "下载"); dl.href = url + "&download=1"; dl.style.textDecoration = "none"; acts.append(dl);
+  if (fsWritable) { const del = el("button", "btn sm warn", "删除"); del.onclick = async () => {
+    if (!confirm("删除 " + e.name + "？")) return;
+    try { await api("/api/files/delete", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ root: fsRoot, path: rel }) }); box.classList.remove("on"); loadFiles(); } catch (err) { toast(err.message); }
+  }; acts.append(del); }
+  const close = el("button", "btn sm", "关闭"); close.onclick = () => box.classList.remove("on"); acts.append(close);
+  bar.append(acts); box.append(bar);
+  if (/^image\//.test(e.type)) { const i = el("img"); i.src = url; box.append(i); }
+  else if (/^audio\//.test(e.type)) { const a = el("audio"); a.controls = true; a.src = url; a.style.width = "100%"; box.append(a); }
+  else if (/^video\//.test(e.type)) { const v = el("video"); v.controls = true; v.src = url; box.append(v); }
+  else if (e.size > 2 * 1024 * 1024) box.append(el("div", "empty", "文件较大，请下载查看"));
+  else { const r = await fetch(url); const t = await r.text(); box.append(el("pre", null, t.length > 200000 ? t.slice(-200000) : t)); }
+}
+$("upBtn").onclick = () => $("upInput").click();
+$("upInput").onchange = async () => {
+  for (const f of $("upInput").files) {
+    toast("上传中：" + f.name);
+    try { await api(`/api/files/upload?root=${fsRoot}&path=${encodeURIComponent(fsPath)}`, { method: "POST", headers: { "X-Filename": encodeURIComponent(f.name) }, body: f }); toast("已上传：" + f.name); }
+    catch (e) { toast(e.message); }
+  }
+  $("upInput").value = ""; loadFiles();
+};
+loadRoots().catch(() => {});
 
-    function drawWave() {
-      requestAnimationFrame(drawWave);
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+/* ---------------- school */
+function mdHighlight(code) {
+  const esc = (x) => x.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return esc(code).replace(/(#.*$)|("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')|\b(def|return|for|in|if|elif|else|while|import|from|as|class|with|try|except|finally|raise|lambda|and|or|not|None|True|False|print|len|range|async|await|yield)\b|\b(\d+(?:\.\d+)?)\b/gm,
+    (m, com, str, kw, num) => com ? `<span class="com">${com}</span>` : str ? `<span class="str">${str}</span>` : kw ? `<span class="kw">${kw}</span>` : `<span class="num">${num}</span>`);
+}
+function renderMarkdown(text, box) {
+  // a small, safe renderer for class notes: headings, lists, code blocks, paragraphs (no raw HTML)
+  box.textContent = ""; box.classList.add("md");
+  const lines = text.split("\n"); let i = 0, list = null;
+  const flush = () => { list = null; };
+  while (i < lines.length) {
+    const ln = lines[i];
+    if (ln.startsWith("```")) {
+      const code = []; i++;
+      while (i < lines.length && !lines[i].startsWith("```")) code.push(lines[i++]);
+      i++; flush();
+      const pre = el("pre"); const c = el("code"); c.innerHTML = mdHighlight(code.join("\n")); pre.append(c); box.append(pre); continue;
+    }
+    const h = ln.match(/^(#{1,3})\s+(.*)$/);
+    if (h) { flush(); box.append(el("h" + h[1].length, null, h[2])); i++; continue; }
+    if (/^\s*-\s+/.test(ln)) { if (!list) { list = el("ul"); box.append(list); } list.append(el("li", null, ln.replace(/^\s*-\s+/, ""))); i++; continue; }
+    flush(); if (ln.trim()) box.append(el("p", null, ln)); i++;
+  }
+}
+async function openNote(name) {
+  const box = $("scNote"); box.textContent = ""; box.classList.add("on");
+  const bar = el("div", "bar2"); bar.append(el("span", null, name.replace(/\.md$/, "")));
+  const close = el("button", "btn sm", "关闭"); close.onclick = () => box.classList.remove("on"); bar.append(close); box.append(bar);
+  const body = el("div"); box.append(body);
+  try { const r = await fetch(`/api/file?root=learning&path=${encodeURIComponent("school/" + name)}`); renderMarkdown(await r.text(), body); }
+  catch (e) { body.textContent = "打不开：" + e.message; }
+}
+function hhmm(t) { const m = /(\d{2}:\d{2})/.exec(t || ""); return m ? m[1] : ""; }
+function renderNow(n, last) {
+  const box = $("scNow"); box.textContent = "";
+  const cur = (n && n.doing) || {};
+  const head = el("div", "q");
+  if (cur.kind) {
+    const label = { lesson: "正在上课", review: "正在自省", practice: "正在练习" }[cur.kind] || "正在学习";
+    const min = Math.max(0, Math.floor((n.elapsed_s || 0) / 60));
+    head.append(el("span", "now-dot"), el("span", null, `${label}：${cur.title}`));
+    box.append(head);
+    if (cur.detail) box.append(el("div", "a", cur.detail));
+    if (cur.step) box.append(el("div", "a", "▸ " + cur.step));
+    box.append(el("div", "meta", min ? `已经 ${min} 分钟` : "刚开始"));
+  } else {
+    head.append(el("span", "now-dot idle"), el("span", null, n && n.school_waiting ? "下一节课在排队，等这轮练习做完就上" : "现在没在上课"));
+    box.append(head);
+  }
+  if (last && last.topic) {
+    const kind = { syllabus: "课本", self: "认识自己", gap: "补短板" }[last.kind] || "";
+    box.append(el("div", "a", `刚上完（${last.time || ""}）：${kind && !last.topic.startsWith(kind) ? kind + " · " : ""}${last.topic} —— ${last.passed}/${last.total}，${last.mastered ? "掌握了" : "还要再练"}`));
+  }
+  const nx = [];
+  if (n && n.loop_on) {
+    const L = n.loop || {};
+    const upcoming = L.running ? (L.running === "lesson" ? "practice" : "lesson") : L.next;   // while a run is on, the other one is next
+    const nextName = upcoming === "practice" ? "练一轮" : "上一节课";
+    if (L.peak && !cur.kind) nx.push(`高峰时段不找老师，过了高峰接着${nextName}`);
+    else if (L.waiting_owner) nx.push(`主人在说话，安静 5 分钟后接着学（下一项：${nextName}）`);
+    else if (!cur.kind) nx.push(`马上接着${nextName}`);
+    else nx.push(`这项完了接着${nextName}`);
+    nx.push(`累计 ${L.lessons || 0} 节课 · ${L.practices || 0} 轮练习`);
+  }
+  if (n && hhmm(n.next_school)) nx.push("下一节课 " + hhmm(n.next_school));
+  if (n && hhmm(n.next_practice)) nx.push("下一轮练习 " + hhmm(n.next_practice));
+  if (nx.length) box.append(el("div", "meta", nx.join(" · ")));
+}
+async function startStudy(what, btn) {
+  btn.disabled = true;
+  try {
+    const r = await fetch("/api/study/start", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ what }) });
+    const d = await r.json().catch(() => ({}));
+    toast(d.ok ? (what === "lesson" ? "开始上课了" : "开始练习了") : (d.error || "没启动成功"));
+  } catch (e) { toast(e.message); }
+  setTimeout(() => { btn.disabled = false; loadSchool(); }, 1500);
+}
+$("scGoLesson").onclick = (e) => startStudy("lesson", e.currentTarget);
+$("scGoPractice").onclick = (e) => startStudy("practice", e.currentTarget);
+// projects (learning/project.py): give her a goal; the list and the current one's latest steps
+$("pjStart").onclick = async (e) => {
+  const goal = $("pjGoal").value.trim();
+  if (!goal) return;
+  e.currentTarget.disabled = true;
+  try {
+    const r = await fetch("/api/project/start", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ goal }) });
+    const d = await r.json().catch(() => ({}));
+    toast(d.say || d.error || "没启动成功");
+    if (d.ok) $("pjGoal").value = "";
+  } catch (err) { toast(err.message); }
+  e.currentTarget.disabled = false;
+  loadProjects();
+};
+async function loadProjects() {
+  try {
+    const d = await api("/api/projects");
+    const say = { new: ["排队", "no"], running: ["在做", "no"], done: ["做完", "ok"], gave_up: ["没做成", "no"], over_budget: ["钱用完", "no"],
+                  out_of_steps: ["步数用完", "no"], too_big: ["太大", "no"], failed: ["出错", "no"], stopped: ["停了", "no"] };
+    const pl = $("pjList"); pl.textContent = "";
+    for (const p of d.projects || []) {
+      const row = el("div", "lesson"), v = say[p.status] || [p.status, "no"];
+      row.append(el("span", "t", (p.started || "").slice(5, 10)), el("span", null, `${p.goal}（${p.steps || 0} 步 · ${Number(p.spent || 0).toFixed(2)} 元）`),
+        el("span", "s " + v[1], v[0]));
+      row.title = (p.summary || "") + (p.waiting ? "\n" + p.waiting : "");
+      pl.append(row);
+    }
+    if (!pl.childElementCount) pl.append(el("div", "empty", "还没有项目"));
+    const ps = $("pjSteps"); ps.textContent = "";
+    for (const h of d.steps || []) {
+      const row = el("div", "lesson");
+      row.append(el("span", "t", "#" + h.n), el("span", null, `${h.tool} ${h.brief || ""}`), el("span", "s " + (h.status === "fail" ? "no" : "ok"), h.status));
+      row.title = h.thought || "";
+      ps.append(row);
+    }
+  } catch (err) { /* the page still works without projects */ }
+}
+async function loadSchool() {
+  loadProjects();
+  try {
+    const d = await api("/api/school");
+    renderNow(d.now, (d.history || [])[0]);
+    const total = d.syllabus.length || 1, idx = Math.min(d.index, total);
+    $("scTitle").textContent = `课程进度：第 ${Math.min(idx + 1, total)} / ${total} 课`;
+    $("scCount").textContent = `已上 ${d.sessions} 节 · 掌握 ${d.mastered} 节`;
+    $("scBar").style.width = (100 * idx / total) + "%";
+    $("scNext").textContent = d.syllabus.length ? "下一课：" + d.syllabus[idx % total] : "";
+    const rv = $("scReview"); rv.textContent = "";
+    if (d.review && d.review.who_am_i) {
+      rv.append(el("div", "q", "我是谁：" + d.review.who_am_i), el("div", "a", "我要干什么：" + (d.review.purpose || "")));
+      for (const g of d.review.gaps || []) rv.append(el("div", "a", "缺：" + g.gap + (g.why ? "（" + g.why + "）" : "")));
+      rv.append(el("div", "meta", d.day || ""));
+    } else rv.append(el("div", "empty", "还没有自省"));
+    const pd = $("scPending"); pd.textContent = "";
+    // weak spots caught by real tests first (retested by practice until they pass), then the self-review's
+    const ws = d.weak_spots || { open: [], closed: [] };
+    const src = { drill: "练习", eval: "评测", manual: "人工" }, mode = { agent: "办事", coding: "写代码" };
+    for (const w of ws.open) {
+      const c = el("span", "chip2 ws", `${src[w.source] || w.source}·${mode[w.mode] || w.mode}：${w.task}`);
+      c.title = `${w.why || ""}\n发现于 ${w.found || ""} · 复测 ${w.tries || 0} 次`;
+      pd.append(c);
+    }
+    d.pending.forEach((t) => pd.append(el("span", "chip2", t)));
+    for (const w of ws.closed) {
+      const c = el("span", "chip2 ws-done", (w.result === "fixed" ? "✓ 复测通过：" : "已撤下：") + w.task);
+      c.title = `${w.closed || ""}${w.result === "dropped" ? " · 老师也做不对，算题目有问题" : ""}`;
+      pd.append(c);
+    }
+    if (!ws.open.length && !d.pending.length) pd.prepend(el("span", "sc-dim", "暂时没有"));
+    // her own prompt rules (learning/selfprompt.py) and every self-tune round, kept or not
+    const sr = d.self_rules || {}, rb = $("scRules"); rb.textContent = "";
+    const secName = { agent: "办事", voice: "说话" };
+    for (const s of ["agent", "voice"]) for (const r of sr[s] || []) rb.append(el("div", "a", `${secName[s]}：${r}`));
+    if (!rb.childElementCount) rb.append(el("div", "empty", "还没有：考卷全对或者还没试过"));
+    else rb.append(el("div", "meta", `第 ${sr.version} 版 · ${sr.updated || ""}`));
+    const tb = $("scTune"); tb.textContent = "";
+    const verdict = { kept: ["留下", "ok"], dropped: ["没留", "no"], refused: ["拦下", "no"], skipped: ["跳过", "no"], aborted: ["中断", "no"] };
+    for (const t of d.self_tune || []) {
+      const row = el("div", "lesson"), v = verdict[t.decision] || [t.decision, "no"];
+      const sc = t.base ? `${t.base.score}/${t.base.max}` + (t.cand ? ` → ${t.cand.score}/${t.cand.max}` : "") : "";
+      row.append(el("span", "t", (t.time || "").slice(5, 16)), el("span", null, (t.why || t.reason || "") + (sc ? `（${sc}）` : "")),
+        el("span", "s " + v[1], v[0]));
+      row.title = t.reason || "";
+      tb.append(row);
+    }
+    if (!tb.childElementCount) tb.append(el("div", "empty", "还没有"));
+    const hs = $("scHistory"); hs.textContent = "";
+    if (!d.history.length) hs.append(el("div", "empty", "还没上过课"));
+    for (const h of d.history.slice(0, 40)) {
+      const row = el("div", "lesson");
+      row.append(el("span", "t", (h.day || "").slice(5) + " " + (h.time || "")), el("span", null, (h.kind === "gap" ? "补短板 · " : "") + h.topic),
+        el("span", "s " + (h.mastered ? "ok" : "no"), `${h.passed}/${h.total} ${h.mastered ? "掌握" : "再练"}`));
+      const note = d.notes.find((n) => n.name.startsWith(h.day) && n.name.includes((h.topic || "").slice(0, 6).replace(/[^\w一-鿿]+/g, "-")));
+      if (note) { row.style.cursor = "pointer"; row.onclick = () => openNote(note.name); }
+      hs.append(row);
+    }
+    const ns = $("scNotes"); ns.textContent = "";
+    for (const n of d.notes.slice(0, 40)) {
+      const row = el("div", "file"); row.append(el("span", "ic", n.name.includes("自省") ? "◎" : "≡"), el("span", null, n.name.replace(/\.md$/, "")), el("span", "sz", fmtTime(n.mtime).slice(5)));
+      row.onclick = () => openNote(n.name); ns.append(row);
+    }
+  } catch (e) { $("scReview").textContent = e.message; }
+}
+setInterval(() => { if ($("v-school").classList.contains("on")) loadSchool(); }, 5000);
 
-      const w = canvas.width;
-      const h = canvas.height;
-      const midY = h / 2;
-
-      let freq = 0.02;
-      let amp = 8;
-      let strokeColor = "rgba(0, 229, 255, 0.4)";
-      let speed = 0.04;
-
-      if (currentState === "LISTEN") {
-        freq = 0.035;
-        amp = 18;
-        strokeColor = "rgba(0, 230, 118, 0.75)";
-        speed = 0.08;
-      } else if (currentState === "ASR") {
-        freq = 0.05;
-        amp = 14;
-        strokeColor = "rgba(255, 145, 0, 0.75)";
-        speed = 0.12;
-      } else if (currentState === "LLM") {
-        freq = 0.07;
-        amp = 12;
-        strokeColor = "rgba(179, 136, 255, 0.85)";
-        speed = 0.15;
-      } else if (currentState === "TTS") {
-        freq = 0.04;
-        amp = 26;
-        strokeColor = "rgba(0, 229, 255, 0.9)";
-        speed = 0.1;
+/* ---------------- owner */
+const OW_WD = "一二三四五六日";
+async function giveFiles(files) {
+  for (const f of files) {
+    toast("交给星期一：" + f.name);
+    try { await api(`/api/files/upload?root=files&path=${encodeURIComponent(OWNER_INBOX)}`, { method: "POST", headers: { "X-Filename": encodeURIComponent(f.name) }, body: f }); toast("已交给她，几分钟内读完：" + f.name); }
+    catch (e) { toast(e.message); }
+  }
+  loadOwner();
+}
+let OWNER_INBOX = "给星期一";
+(() => {
+  const d = $("owDrop"), inp = $("owInput");
+  d.onclick = () => inp.click();
+  inp.onchange = () => { giveFiles([...inp.files]); inp.value = ""; };
+  d.ondragover = (e) => { e.preventDefault(); d.classList.add("over"); };
+  d.ondragleave = () => d.classList.remove("over");
+  d.ondrop = (e) => { e.preventDefault(); d.classList.remove("over"); giveFiles([...e.dataTransfer.files]); };
+})();
+async function answerQ(id, input) {
+  const v = input.value.trim(); if (!v) return;
+  try { await api("/api/owner/answer", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, answer: v }) }); toast("她记住了"); loadOwner(); }
+  catch (e) { toast(e.message); }
+}
+async function loadOwner() {
+  try {
+    const d = await api("/api/owner"); OWNER_INBOX = d.inbox || OWNER_INBOX;
+    const qs = $("owQs"); qs.textContent = "";
+    for (const q of d.questions) {
+      const box = el("div", "owq"); box.append(el("div", null, q.q));
+      if (q.answer) box.append(el("div", "done", "你答：" + q.answer));
+      else {
+        const row = el("div", "row"), inp = el("input"); inp.placeholder = "回答她…"; inp.onkeydown = (e) => { if (e.key === "Enter") answerQ(q.id, inp); };
+        const b = el("button", "btn sm", "告诉她"); b.onclick = () => answerQ(q.id, inp); row.append(inp, b); box.append(row);
       }
-
-      wavePhase += speed;
-
-      // Draw 3 layers of harmonic wave lines
-      for (let layer = 1; layer <= 3; layer++) {
-        ctx.beginPath();
-        const layerAmp = amp * (1.1 - layer * 0.25);
-        const layerPhase = wavePhase * (1 + layer * 0.2);
-
-        for (let x = 0; x < w; x += 4) {
-          const envelope = Math.sin((x / w) * Math.PI); // Taper ends
-          const y = midY + Math.sin(x * freq + layerPhase) * layerAmp * envelope;
-          if (x === 0) ctx.moveTo(x, y);
-          else ctx.lineTo(x, y);
-        }
-
-        ctx.strokeStyle = layer === 1 ? strokeColor : strokeColor.replace(/[\d\.]+\)$/, "0.25)");
-        ctx.lineWidth = layer === 1 ? 2.5 : 1.2;
-        ctx.stroke();
+      box.append(el("div", "meta", (q.from ? "来自 " + q.from + " · " : "") + (q.time || ""))); qs.append(box);
+    }
+    if (!d.questions.length) qs.append(el("div", "empty", "暂时没有问题"));
+    const pf = $("owProfile"); pf.textContent = "";
+    const prof = (d.profile && d.profile.profile) || [], habits = (d.profile && d.profile.habits) || [];
+    prof.forEach((x) => pf.append(el("div", "a", "· " + x)));
+    habits.forEach((x) => pf.append(el("div", "a", "习惯：" + x)));
+    if (d.profile && d.profile.updated) pf.append(el("div", "meta", "更新于 " + d.profile.updated));
+    if (!prof.length && !habits.length) pf.append(el("div", "empty", "还不了解主人，每晚她会根据当天的对话想一想"));
+    const sc = $("owSched"); sc.textContent = "";
+    const weekly = d.schedule.filter((e) => e.weekday), dated = d.schedule.filter((e) => e.date);
+    if (weekly.length) {
+      const g = el("div", "wk"), today = (new Date().getDay() + 6) % 7 + 1;
+      for (let i = 1; i <= 7; i++) g.append(el("div", "d", "周" + OW_WD[i - 1]));
+      for (let i = 1; i <= 7; i++) {
+        const c = el("div", "c");
+        weekly.filter((e) => e.weekday === i).forEach((e) => c.append(el("div", "e" + (i === today ? " today" : ""), `${e.start || ""} ${e.title}${e.place ? " · " + e.place : ""}`)));
+        g.append(c);
       }
+      sc.append(g);
     }
-    requestAnimationFrame(drawWave);
+    dated.slice(0, 12).forEach((e) => sc.append(el("div", "a", `${e.date} ${e.start || ""} ${e.title}${e.place ? " · " + e.place : ""}`)));
+    if (!d.schedule.length) sc.append(el("div", "empty", "还没有。把课程表或日程文件交给她就有了"));
+    const fs = $("owFiles"); fs.textContent = "";
+    for (const w of d.waiting) { const r = el("div", "file"); r.append(el("span", "ic", "…"), el("span", null, w), el("span", "sz", "排队读")); fs.append(r); }
+    for (const [name, v] of Object.entries(d.files).reverse()) {
+      const r = el("div", "file"); r.append(el("span", "ic", v.events ? "▦" : "≡"), el("span", null, `${name} · ${v.summary || v.kind || ""}`), el("span", "sz", (v.time || "").slice(5)));
+      r.onclick = () => openDoc("owner/files/" + name.replace(/\.[^.]+$/, "") + ".md", "owDoc"); fs.append(r);
+    }
+    if (!d.waiting.length && !Object.keys(d.files).length) fs.append(el("div", "empty", "还没有"));
+    const ds = $("owDays"); ds.textContent = "";
+    for (const x of d.days) { const r = el("div", "file"); r.append(el("span", "ic", "◎"), el("span", null, x.name.replace(/\.md$/, "") + " 主人的一天")); r.onclick = () => openDoc(x.path, "owDoc"); ds.append(r); }
+    if (!d.days.length) ds.append(el("div", "empty", "每晚她会写一篇"));
+  } catch (e) { $("owQs").textContent = e.message; }
+}
+setInterval(() => { if ($("v-owner").classList.contains("on")) loadOwner(); }, 30000);
 
-    // Update State UI
-    function updateState(state) {
-      currentState = (state || "IDLE").toUpperCase();
-      const meta = STATE_LABELS[currentState] || { text: currentState, class: "" };
-      stateBadge.textContent = meta.text;
-      stateBadge.className = "state-badge " + meta.class;
-      waveStateText.textContent = "AUDIO " + currentState;
-
-      if (currentState === "LISTEN" || currentState === "IDLE") {
-        activeAssistantMsgEl = null;
+/* ---------------- progress (LoRA + work reports) */
+async function openDoc(path, boxId) {
+  const box = $(boxId); box.textContent = ""; box.classList.add("on");
+  const bar = el("div", "bar2"); bar.append(el("span", null, path.split("/").pop().replace(/\.md$/, "")));
+  const close = el("button", "btn sm", "关闭"); close.onclick = () => box.classList.remove("on"); bar.append(close); box.append(bar);
+  const body = el("div"); box.append(body);
+  try { const r = await fetch(`/api/file?root=learning&path=${encodeURIComponent(path)}`); renderMarkdown(await r.text(), body); }
+  catch (e) { body.textContent = "打不开：" + e.message; }
+}
+function yuan(x) { return (x || 0) < 0.01 ? "不到一分钱" : (x || 0).toFixed(2) + " 元"; }
+function renderSpend(s) {
+  const box = $("pgSpend"); box.textContent = "";
+  if (s.error || !s.today) { box.append(el("div", "empty", s.error || "还没有记录")); return; }
+  const t = s.today.total;
+  box.append(el("div", "q", `今天 ${yuan(t.yuan)} · ${t.calls} 次调用` + (t.peak_yuan ? `（其中高峰时段 ${yuan(t.peak_yuan)}）` : "")));
+  box.append(el("div", "a", `输入 ${(t.hit + t.miss).toLocaleString()} 个 token（缓存命中 ${t.hit + t.miss ? Math.round(100 * t.hit / (t.hit + t.miss)) : 0}%）· 输出 ${t.out.toLocaleString()} 个`));
+  for (const [job, j] of Object.entries(s.today.jobs || {})) box.append(el("div", "a", `${job}：${yuan(j.yuan)} · ${j.calls} 次`));
+  box.append(el("div", "meta", `昨天 ${yuan((s.yesterday || {}).yuan)} · 本月 ${yuan(s.month_yuan)} · 现在是${s.peak_now ? "高峰时段（不找老师，学习和蒸馏都停）" : "空闲时段"}`));
+}
+function renderDistill(d) {
+  const box = $("pgDistill"); box.textContent = "";
+  if (!d.targets) { box.append(el("div", "empty", "还没开始")); return; }
+  const names = { voice: "说话", self: "认识自己", coding: "编程", agent: "动手办事" };
+  const done = Object.keys(d.targets).reduce((a, k) => a + Math.min(d.done[k] || 0, d.targets[k]), 0);
+  const all = Object.values(d.targets).reduce((a, b) => a + b, 0);
+  const running = d.status === "running" && Date.now() / 1000 - (d.updated || 0) < 600;
+  box.append(el("div", "q", `${running ? "正在蒸馏" : "已停下"}：${done} / ${all} 条 · 花了 ${yuan(d.yuan)}（上限 ${d.max_yuan} 元）`));
+  const bar = el("div", "bar"); const i = el("i"); i.style.width = (all ? 100 * done / all : 0) + "%"; bar.append(i); box.append(bar);
+  box.append(el("div", "a", Object.keys(d.targets).map((k) => `${names[k] || k} ${d.done[k] || 0}/${d.targets[k]}`).join(" · ") + ` · 没通过检查丢掉 ${d.dropped || 0} 条`));
+  if (!running && d.why) box.append(el("div", "meta", "停下原因：" + d.why));
+}
+async function loadProgress() {
+  try {
+    const d = await api("/api/progress"), L = d.lora || {};
+    const steps = L.steps || [], done = steps.filter((x) => x.state === "done").length;
+    $("pgUpd").textContent = L.updated ? "更新于 " + L.updated : "还没有数据";
+    $("pgBar").style.width = (steps.length ? 100 * done / steps.length : 0) + "%";
+    $("pgStage").textContent = L.stage || "";
+    const st = $("pgSteps"); st.textContent = "";
+    const mark = { done: ["ok", "完成"], running: ["no", "进行中"], wait: ["", "等待"], failed: ["no", "失败"], ask: ["no", "等主人确认"] };
+    for (const x of steps) {
+      const row = el("div", "lesson"), m = mark[x.state] || ["", x.state];
+      row.append(el("span", "t", x.time || ""), el("span", null, x.name + (x.detail ? " · " + x.detail : "")), el("span", "s " + m[0], m[1]));
+      st.append(row);
+    }
+    if (!steps.length) st.append(el("div", "empty", "还没开始"));
+    renderSpend(d.spend || {}); renderDistill(d.distill || {});
+    const vs = $("pgVers"); vs.textContent = "";
+    for (const v of L.versions || []) {
+      const it = el("div", "item");
+      it.append(el("div", "q", `${v.version}：${v.samples || 0} 条对话 · 验证损失 ${v.loss_before ?? "?"} → ${v.loss_after ?? "?"}`));
+      for (const c of (v.compare || []).slice(0, 3)) {
+        it.append(el("div", "meta", "问：" + c.user), el("div", "a", "训练前：" + (c.before || "")), el("div", "a", "训练后：" + (c.after || "")));
       }
+      vs.append(it);
     }
-
-    function refreshVideoFrame() {
-      const ts = Date.now();
-      videoStream.src = "/latest_frame.jpg?t=" + ts;
-      frameTimeHud.textContent = "MediaMTX 缓存 · " + new Date().toLocaleTimeString();
-      if (streamProtoBadge) streamProtoBadge.textContent = "MediaMTX 缓存 JPEG";
+    if (!(L.versions || []).length) vs.append(el("div", "empty", "还没有训练结果"));
+    const rs = $("pgReports"); rs.textContent = "";
+    for (const r of d.reports) {
+      const row = el("div", "file"); row.append(el("span", "ic", "≡"), el("span", null, r.name.replace(/\.md$/, "")), el("span", "sz", fmtTime(r.mtime).slice(5)));
+      row.onclick = () => openDoc(r.path, "pgDoc"); rs.append(row);
     }
+    if (!d.reports.length) rs.append(el("div", "empty", "还没有报告"));
+  } catch (e) { $("pgStage").textContent = e.message; }
+}
+setInterval(() => { if ($("v-prog").classList.contains("on")) loadProgress(); }, 30000);
 
-    function onVideoLoaded() {
-      videoPlaceholder.style.display = "none";
-      videoStream.style.opacity = "1";
-    }
+/* ---------------- logs */
+async function loadLogs() {
+  try {
+    const d = await api(`/api/logs?name=${$("logSel").value}&lines=300`);
+    const box = $("logBox"), atEnd = box.scrollTop + box.clientHeight >= box.scrollHeight - 30;
+    $("logText").textContent = d.text; if (atEnd) box.scrollTop = box.scrollHeight;
+  } catch (e) { $("logText").textContent = e.message; }
+}
+$("logSel").onchange = loadLogs;
+setInterval(() => { if ($("logAuto").checked && $("v-logs").classList.contains("on")) loadLogs(); }, 3000);
 
-    function onVideoError() {
-      videoPlaceholder.style.display = "flex";
-      videoStream.style.opacity = "0.2";
-    }
-
-    setInterval(refreshVideoFrame, 1200);
-    refreshVideoFrame();
-
-    // Dialogue Chat Helpers
-    function appendUserMessage(text) {
-      const msgEl = document.createElement("div");
-      msgEl.className = "chat-msg user";
-      msgEl.innerHTML = `
-        <div class="msg-header">${escapeHtml(userTitle || "我")} · ${new Date().toLocaleTimeString()}</div>
-        <div class="msg-bubble">${escapeHtml(text)}</div>
-      `;
-      chatBox.appendChild(msgEl);
-      chatBox.scrollTop = chatBox.scrollHeight;
-    }
-
-    function ensureAssistantBubble() {
-      if (!activeAssistantMsgEl) {
-        activeAssistantMsgEl = document.createElement("div");
-        activeAssistantMsgEl.className = "chat-msg assistant";
-        activeAssistantMsgEl.innerHTML = `
-          <div class="msg-header">星期一 · ${new Date().toLocaleTimeString()}</div>
-          <div class="msg-bubble">
-            <span class="token-stream"></span>
-            <div class="tts-playing-tag" style="display: none;">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
-              <span class="tts-text">正在播报...</span>
-            </div>
-          </div>
-        `;
-        chatBox.appendChild(activeAssistantMsgEl);
-        activeTokenSpan = activeAssistantMsgEl.querySelector(".token-stream");
-        activeTtsSpan = activeAssistantMsgEl.querySelector(".tts-playing-tag");
-      }
-      chatBox.scrollTop = chatBox.scrollHeight;
-    }
-
-    function appendToken(token) {
-      ensureAssistantBubble();
-      if (activeTokenSpan) {
-        activeTokenSpan.textContent += token;
-      }
-      chatBox.scrollTop = chatBox.scrollHeight;
-    }
-
-    function setTtsSentence(text) {
-      ensureAssistantBubble();
-      if (activeTtsSpan) {
-        activeTtsSpan.style.display = "inline-flex";
-        activeTtsSpan.querySelector(".tts-text").textContent = text;
-      }
-      chatBox.scrollTop = chatBox.scrollHeight;
-    }
-
-    function updateSceneMemory(memory) {
-      if (!memory) return;
-      if (memory.caption) {
-        memoryCaption.textContent = `“${memory.caption}”`;
-      }
-      if (memory.activity) {
-        activityTag.textContent = memory.activity;
-      }
-      if (memory.time_str) {
-        memoryTime.textContent = "更新于: " + memory.time_str;
-      }
-      if (Array.isArray(memory.tags) && memory.tags.length > 0) {
-        memoryTags.innerHTML = memory.tags.map(t => `<span class="memory-tag">🏷️ ${escapeHtml(t)}</span>`).join("");
-      }
-    }
-
-    function escapeHtml(str) {
-      return String(str).replace(/[&<>"']/g, m => ({
-        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
-      })[m]);
-    }
-
-    // Send WebSocket Command
-    function sendWs(msgObj) {
-      if (ws && ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify(msgObj));
-      }
-    }
-
-    function sendChatMessage(text) {
-      const t = text.trim();
-      if (!t) return;
-      appendUserMessage(t);
-      sendWs({ type: "chat", text: t });
-      chatInput.value = "";
-    }
-
-    // WebSocket Client
-    function connectWs() {
-      wsDot.className = "status-dot";
-      wsText.textContent = "连接中…";
-
-      ws = new WebSocket(WS_URL);
-
-      ws.onopen = () => {
-        wsDot.className = "status-dot active";
-        wsText.textContent = "已连接服务";
-        sendWs({ type: "get_status" });
-        sendWs({ type: "settings_get" });
-      };
-
-      ws.onclose = () => {
-        wsDot.className = "status-dot error";
-        wsText.textContent = "服务离线 (重连中)";
-        setTimeout(connectWs, 3000);
-      };
-
-      ws.onerror = () => {
-        wsDot.className = "status-dot error";
-        wsText.textContent = "连接异常";
-      };
-
-      ws.onmessage = (evt) => {
-        let msg;
-        try {
-          msg = JSON.parse(evt.data);
-        } catch {
-          return;
-        }
-
-        switch (msg.type) {
-          case "state":
-            updateState(msg.value);
-            break;
-
-          case "user_title":
-            userTitle = msg.value;
-            break;
-
-          case "settings_snapshot":
-            if (typeof msg.user_title === "string") userTitle = msg.user_title;
-            break;
-
-          case "asr_final":
-            if (msg.source !== "web") {
-              appendUserMessage(msg.text);
-            }
-            break;
-
-          case "llm_token":
-            if (msg.text) {
-              appendToken(msg.text);
-            }
-            break;
-
-          case "tts_sentence":
-            if (msg.text) {
-              setTtsSentence(msg.text);
-            }
-            break;
-
-          case "barge_in":
-            if (activeTtsSpan) {
-              activeTtsSpan.style.display = "none";
-            }
-            break;
-
-          case "camera_frame":
-            if (typeof msg.motion === "number") {
-              motionHud.textContent = `动态感知: ${msg.motion.toFixed(1)}`;
-              motionHud.style.color = msg.motion > 4.0 ? "var(--accent-green)" : "var(--accent-orange)";
-            }
-            refreshVideoFrame();
-            break;
-
-          case "scene_memory":
-            updateSceneMemory(msg.memory);
-            break;
-
-          case "vision_start":
-            ensureAssistantBubble();
-            if (activeTokenSpan) activeTokenSpan.textContent = "正在通过 vlm_daemon 观察画面…";
-            updateState("llm");
-            break;
-
-          case "vision_error":
-            ensureAssistantBubble();
-            if (activeTokenSpan) {
-              activeTokenSpan.textContent = msg.error === "camera_unreachable"
-                ? "摄像头暂时不可用，请检查 RTSP 地址或网络。"
-                : "视觉分析失败，请稍后重试。";
-            }
-            break;
-
-          case "vision_caption":
-            ensureAssistantBubble();
-            if (msg.caption) {
-              if (activeTokenSpan) activeTokenSpan.textContent = msg.caption;
-              memoryCaption.textContent = `“${msg.caption}”`;
-            }
-            refreshVideoFrame();
-            break;
-
-          case "camera_status":
-            if (msg.url) {
-              rtspUrlInput.value = msg.url;
-            }
-            camDot.className = msg.connected ? "status-dot active" : "status-dot warn";
-            camText.textContent = msg.connected ? "摄像头就绪" : "流拉取重试中";
-            break;
-
-          case "status_response":
-            if (msg.state) updateState(msg.state);
-            if (msg.camera_url) rtspUrlInput.value = msg.camera_url;
-            if (msg.scene_memory) updateSceneMemory(msg.scene_memory);
-            if (msg.asr_backend) document.getElementById("asrBackendVal").textContent = msg.asr_backend;
-            if (msg.inference_backend || msg.llm_backend) {
-              const be = msg.inference_backend || msg.llm_backend;
-              if (edgeModelVal) {
-                edgeModelVal.textContent = be === "vlm_daemon"
-                  ? "InternVL3 · vlm_daemon (P5b)"
-                  : be + " · /tmp/r1-llm.sock";
-              }
-            }
-            if (typeof msg.vlm_daemon_ready === "boolean") {
-              vlmDot.className = msg.vlm_daemon_ready ? "status-dot active" : "status-dot warn";
-              const sock = msg.llm_socket || "/tmp/r1-vlm.sock";
-              vlmText.textContent = msg.vlm_daemon_ready
-                ? "VLM 就绪 · " + sock.replace("/tmp/", "")
-                : "VLM 未就绪 · " + sock.replace("/tmp/", "");
-            }
-            if (msg.preview_exists) refreshVideoFrame();
-            break;
-
-          case "latency":
-            if (msg.vad_to_first_token_ms) {
-              ttftVal.textContent = msg.vad_to_first_token_ms + "ms";
-            }
-            if (msg.vad_to_first_play_ms) {
-              ttsPlayVal.textContent = msg.vad_to_first_play_ms + "ms";
-              totalLatencyVal.textContent = msg.vad_to_first_play_ms + "ms";
-            }
-            break;
-        }
-      };
-    }
-
-    // Event Listeners
-    sendBtn.addEventListener("click", () => sendChatMessage(chatInput.value));
-    chatInput.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") sendChatMessage(chatInput.value);
-    });
-
-    document.querySelectorAll(".chip-btn").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const q = btn.getAttribute("data-query");
-        if (q) sendChatMessage(q);
-      });
-    });
-
-    snapBtn.addEventListener("click", () => {
-      sendWs({ type: "snap", prompt: "桌面上有什么？" });
-    });
-
-    saveRtspBtn.addEventListener("click", () => {
-      const u = rtspUrlInput.value.trim();
-      if (u) {
-        sendWs({ type: "set_camera_url", url: u });
-      }
-    });
-
-    bargeBtn.addEventListener("click", () => {
-      sendWs({ type: "stop" });
-    });
-
-    clearChatBtn.addEventListener("click", () => {
-      chatBox.innerHTML = `
-        <div class="chat-msg assistant">
-          <div class="msg-header">星期一 · 提示</div>
-          <div class="msg-bubble">对话记录已清空。随时待命${userTitle ? "，" + escapeHtml(userTitle) : ""}请吩咐。</div>
-        </div>
-      `;
-      activeAssistantMsgEl = null;
-    });
-
-    // Start WebSocket
-    connectWs();
-  </script>
+/* ---------------- settings */
+function applySettings(s) {
+  settings = s;
+  $("spd").min = s.speed_min; $("spd").max = s.speed_max; $("spd").value = s.speed; $("spdVal").textContent = Number(s.speed).toFixed(2) + "×";
+  $("vol").value = s.speaker_volume; $("volVal").textContent = s.speaker_volume + "%";
+  $("titleIn").value = s.user_title || ""; $("titleText").textContent = s.user_title || "主人";
+  $("speedText").textContent = Number(s.speed).toFixed(2) + "×"; $("voiceText").textContent = s.voice_label || s.voice_id;
+  const vs = $("voiceSel"); vs.textContent = "";
+  (s.voices || []).forEach((v) => { const o = el("option", null, v.label + (v.available ? "" : "（不可用）")); o.value = v.id; o.disabled = !v.available; vs.append(o); });
+  vs.value = s.voice_id; setState(s.state);
+}
+const patch = (p) => send({ type: "settings_set", patch: p });
+$("spd").oninput = () => { $("spdVal").textContent = Number($("spd").value).toFixed(2) + "×"; };
+$("spd").onchange = () => { patch({ speed: Number($("spd").value) }); toast("语速已调整，固定回复会重新合成"); };
+$("vol").oninput = () => { $("volVal").textContent = $("vol").value + "%"; };
+$("vol").onchange = () => patch({ speaker_volume: Number($("vol").value) });
+$("titleSave").onclick = () => { const t = $("titleIn").value.trim(); if (t) { patch({ user_title: t }); toast("以后叫你「" + t + "」"); } };
+$("voiceSel").onchange = () => { patch({ voice_id: $("voiceSel").value }); toast("正在切换声音"); };
+$("devLink").href = "http://" + host + ":8767/";
+</script>
 </body>
 </html>

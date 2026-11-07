@@ -11,6 +11,7 @@ import os
 import subprocess
 import sys
 import time
+import uuid
 import urllib.request
 from pathlib import Path
 from typing import Any, Callable
@@ -44,10 +45,21 @@ from asr.sense_voice import SenseVoiceConfig
 from asr.sherpa_streaming_asr import StreamingParaformerConfig
 from asr.vad_stream import VadConfig, VadStream
 from llm.client import LlmUnavailableError, llm_chat_stream, llm_clear_history, llm_ping
-from orchestrator.quick_reply import ACK_GROUPS, ACK_PHRASES, ack_for, ack_kind, quick_reply_for, strip_leading_ack
+from orchestrator.quick_reply import ACK_GROUPS, ACK_PHRASES, ack_for, ack_kind, fixed_replies, quick_reply_for, strip_leading_ack
 from orchestrator.user_title import DEFAULT_TITLE, apply_title, parse_title_command
+from orchestrator.volume_command import parse_volume_command
 from orchestrator import selftest
-from learning.brain import MEMO_MARK, Learner, MemoFilter, is_correction, parse_memo, route, teacher_system
+from learning.brain import MEMO_MARK, Learner, MemoFilter, Route, is_correction, parse_memo, route, teacher_system
+from learning.agent import Agent, AgentResult, known_ssh_hosts, approval_answer, describe_step, is_agent_task
+from learning.credentials import Credentials, extract_credentials, install_log_redaction, mask_secrets
+from learning.drill import local_planner
+from learning import selfprompt
+from learning.sandbox import available as sandbox_available, run_step as sandbox_run_step
+from learning.grants import GrantStore
+from learning.intent import classify as classify_intent, recent_block
+from learning.journal import log_turn
+from learning.mcp import McpHub
+from learning.skills import SkillStore
 from learning.memory import MemoryStore
 from learning.teacher import DeepSeekTeacher, TeacherUnavailable
 from devices.voice import DeviceAgent, parse_command as parse_device_command
@@ -83,11 +95,57 @@ from tts.voice_settings import VoiceSettingsManager, is_voice_settings_query
 LOG = logging.getLogger("orchestrator")
 
 
+# fixed sentences said outside quick replies; pre-synthesized with them (see _warm_ack_cache)
+FIXED_SPOKEN = (
+    "好的，主人。",
+    "随时待命，主人请吩咐。",
+    "主人，大模型正在启动，请稍等半分钟再问我。",
+    "主人，刚才没处理好，请再说一遍。",
+)
+
+
+def _est_tokens(text: str) -> int:
+    """Qwen3.5 tokenizer, measured on our Chinese prompts: ~0.57 token per character; rounded up for safety."""
+    return int(len(text or "") * 0.62) + 2
+
+
+def _clip(text: str, n: int) -> str:
+    text = " ".join((text or "").split())
+    return text if len(text) <= n else text[:n] + "…"
+
+
 def _wav_seconds(path: Path) -> float:
     import wave
 
     with wave.open(str(path), "rb") as w:
         return w.getnframes() / float(w.getframerate() or 1)
+
+
+# Sampling TTS (qwen3) now and then returns near-silence with a short blip. 2026-11-07: the cached
+# noon greeting clip ("中午好，<name>。") was 13 % voiced and the owner heard nothing at noon; every good cached clip
+# measured 41 % or more (100 ms windows above RMS 300).
+MIN_VOICED_SHARE = 0.25
+
+
+def _wav_voiced_share(path: Path, threshold: int = 300) -> float:
+    """Share of 100 ms windows of a 16-bit WAV that carry sound (RMS above threshold)."""
+    import array
+    import wave
+
+    with wave.open(str(path), "rb") as w:
+        if w.getsampwidth() != 2:
+            return 1.0
+        win = max(1, w.getframerate() * w.getnchannels() // 10)
+        samples = array.array("h", w.readframes(w.getnframes()))
+    if sys.byteorder == "big":
+        samples.byteswap()
+    total = loud = 0
+    for i in range(0, len(samples), win):
+        seg = samples[i:i + win]
+        total += 1
+        if sum(x * x for x in seg) > threshold * threshold * len(seg):
+            loud += 1
+    return loud / total if total else 0.0
 
 
 def setup_logging(level: str = "INFO") -> None:
@@ -96,6 +154,22 @@ def setup_logging(level: str = "INFO") -> None:
         format="%(asctime)s %(levelname)s %(message)s",
         datefmt="%H:%M:%S",
     )
+
+
+def _spoken_step(step: dict) -> str:
+    """What an agent step does, short enough to say out loud: "跑 avahi-browse", "登录 196 跑 df"."""
+    tool = step.get("tool")
+    if tool == "mcp":
+        return f"调用 {step.get('server')} 的 {step.get('name')}"
+    if tool == "ssh_key_setup":
+        return f"用你给的密码登录 {step.get('host')} 装公钥"
+    if tool == "note":
+        return f"写笔记 {step.get('name')}"
+    words = [w for w in re.split(r"\s+|&&|;|\|", str(step.get("cmd") or "")) if w]
+    while words and words[0] in ("sudo", "cd", "env") or (words and "=" in words[0]):
+        words = words[2:] if words[0] == "cd" else words[1:]
+    prog = words[0].rsplit("/", 1)[-1] if words else "一条命令"
+    return f"登录 {step.get('host')} 跑 {prog}" if tool == "ssh" else f"跑 {prog}"
 
 
 class Orchestrator:
@@ -299,6 +373,8 @@ class Orchestrator:
         self.inference_backend = backend
         self.max_new_tokens = int(cfg.get("max_new_tokens", 64))
         self.history_max_turns = int(cfg.get("history_max_turns", 4))
+        # the local model's context (llm_daemon's ctx argument): history is fitted into what is left
+        self.llm_context_tokens = int(cfg.get("llm_context_tokens", 768))
         self.history_idle_clear_sec = float(cfg.get("history_idle_clear_sec", 600))
         dialog_cfg = cfg.get("dialog") or {}
         self.user_title = (
@@ -315,6 +391,26 @@ class Orchestrator:
         teach_cfg = cfg.get("teacher") or {}
         self.memory = MemoryStore(learn_cfg.get("db", "/userdata/agent/run/learning/memory.db"))
         self.learner = Learner(self.memory, Path(learn_cfg.get("lora_log", "/userdata/agent/run/learning/lora_data.jsonl")))
+        # every turn, for the nightly self-review (learning/reflect.py)
+        self.journal_dir = Path(learn_cfg.get("journal_dir", "/userdata/agent/run/learning/turns"))
+        # things it learned how to *do* (learning/agent.py), in the same database
+        # external MCP tool servers for the agent (config: mcp.servers), started on first use
+        self.mcp = McpHub.from_config(cfg.get("mcp"))
+        self.skills = SkillStore(Path(learn_cfg.get("db", "/userdata/agent/run/learning/memory.db")))
+        # "允许并记住": standing permissions for ask-level agent steps (same database, revocable in the web page)
+        self.grants = GrantStore(Path(learn_cfg.get("db", "/userdata/agent/run/learning/memory.db")))
+        self._agent_task: asyncio.Task | None = None
+        self._agent_pending: dict[str, asyncio.Future] = {}
+        self._pending_creds: Credentials | None = None  # a password just said/typed, for the agent turn only
+        self._recent: list[dict] = []  # last turns (any route): context for the intent classifier and the teacher
+        install_log_redaction()
+        self.agent_approval_timeout = float(learn_cfg.get("agent_approval_timeout", 90))
+        # the local model tries read-only tasks itself before asking the teacher (off until a LoRA passes eval)
+        self.agent_local_first = bool(learn_cfg.get("agent_local_first", False))
+        # ask-level shell steps run in a read-only, offline sandbox (learning.sandbox) instead of asking
+        self.agent_sandbox = bool(learn_cfg.get("agent_sandbox", True)) and sandbox_available()
+        if self.agent_sandbox:
+            LOG.info("[agent] sandbox on (bwrap): read-only commands run without asking")
         self.teacher_enabled = bool(teach_cfg.get("enabled", True))
         self.teacher = DeepSeekTeacher(
             base_url=str(teach_cfg.get("base_url", "https://api.deepseek.com")),
@@ -384,6 +480,7 @@ class Orchestrator:
         await self.tts_queue.reconfigure(self._tts_config_from_voice())
         set_keep_latin(getattr(self.tts_queue.engine, "streaming", False))
         self._ack_cache = {}
+        self.tts_queue.clip_cache = {}
         asyncio.create_task(self._warm_ack_cache())
         self.tts_queue.engine.set_playback_env(self.audio_profile.playback_env())
         p = self.voice_settings.active_profile()
@@ -443,6 +540,48 @@ class Orchestrator:
         if generation == self._active_turn_id and not self._turn_busy:
             self.set_state(AgentState.LISTEN)
 
+    async def _notice_loop(self, every: float = 20.0) -> None:
+        """Say queued notices (run/notices/*.txt, e.g. a project that finished - learning/project.py) when idle."""
+        folder = self.agent_root / "run" / "notices"
+        await asyncio.sleep(60)
+        while True:
+            await asyncio.sleep(every)
+            try:
+                files = sorted(folder.glob("*.txt")) if folder.is_dir() else []
+                if not files or self._turn_busy or self._speaking or getattr(self, "_agent_running", False):
+                    continue
+                text = files[0].read_text(encoding="utf-8").strip()
+                files[0].unlink()
+            except OSError:
+                continue
+            if not text:
+                continue
+            LOG.info("[notice] %s", text[:120])
+            self._next_turn_id += 1
+            generation = self._next_turn_id
+            self._active_turn_id = generation
+            self._tts_abort = False
+            self.tts_queue.mark_utterance_start(generation)
+            await self._emit_reply_final(text)
+            await self._speak_turn(text, generation=generation)
+            await self.tts_queue.wait_done(generation=generation)
+            if generation == self._active_turn_id and not self._turn_busy:
+                self.set_state(AgentState.LISTEN)
+
+    async def _selfheal_notice(self, delay: float = 45.0) -> None:
+        """Say what the self-heal watchdog (ops/selfheal.py) did while we were down - e.g. a rollback - once."""
+        path = self.agent_root / "run" / "selfheal_notice.txt"
+        await asyncio.sleep(delay)  # after the models are up and the boot self-test has spoken
+        try:
+            text = path.read_text(encoding="utf-8").strip()
+            path.unlink()
+        except OSError:
+            return
+        if text:
+            LOG.info("[selfheal] notice: %s", text)
+            await self._emit_reply_final(text)
+            await self._agent_say(text)
+
     def _apply_title(self, text: str) -> str:
         return apply_title(text, getattr(self, "user_title", DEFAULT_TITLE))
 
@@ -450,11 +589,14 @@ class Orchestrator:
         self.user_title = title
         self.user_settings.patch({"user_title": title})
         LOG.info("[dialog] user title -> %r", title)
+        asyncio.create_task(self._warm_ack_cache())  # fixed replies contain the title
         await self.emit({"type": "user_title", "value": title})
 
     async def emit(self, event: dict[str, Any]) -> None:
         if isinstance(event.get("text"), str) and event.get("type") not in ("asr_partial", "asr_final"):
             event = {**event, "text": self._apply_title(event["text"])}
+        if isinstance(event.get("text"), str):
+            event = {**event, "text": mask_secrets(event["text"])}  # a password said aloud never reaches the page
         await self.event_bus.publish(event)
 
     def set_state(self, new: AgentState) -> None:
@@ -858,6 +1000,7 @@ class Orchestrator:
         self._turn_busy = True
         duration = event.get("duration_sec", 0.0)
         LOG.info("[event] audio_segment %.2fs", duration)
+        # not marked as owner activity here: any noise in the room makes a segment; see _llm_turn
         if not was_speaking:
             self.set_state(AgentState.ASR)
         session = self._asr_session
@@ -866,7 +1009,10 @@ class Orchestrator:
                 session = self._new_asr_session()
                 await session.start()
             result = await session.finalize_samples(event["samples"])
-            text = normalize_user_text((result.get("text") or "").strip())
+            raw_text, creds = extract_credentials((result.get("text") or "").strip())  # before normalizing mangles it
+            if creds:
+                self._pending_creds = creds
+            text = normalize_user_text(raw_text)
             if text:
                 LOG.info("[asr] normalized: %s", text)
                 recent_tts = self._speaking or (time.monotonic() - getattr(self, "_last_tts_end_at", 0.0) < 2.0)
@@ -1005,9 +1151,21 @@ class Orchestrator:
         else:
             period = "晚上"
         h12 = hour % 12 or 12
+        agenda = ""
+        try:   # the owner's timetable from the 主人 tab (learning/inbox.py): the next few items today
+            import os
+            from learning.inbox import today_events
+            owner_dir = Path(os.environ.get("AGENT_ROOT", "/userdata/agent")) / "run" / "learning" / "owner"
+            hm = f"{hour:02d}:{now.minute:02d}"
+            nxt = [e for e in today_events(owner_dir, now.date()) if (e.get("end") or e.get("start") or "99") >= hm][:3]
+            if nxt:
+                agenda = "主人今天还有：" + "；".join(f"{e.get('start', '')} {e['title']}" + (f"（{e['place']}）" if e.get("place") else "")
+                                               for e in nxt) + "。"
+        except Exception:  # noqa: BLE001 - no timetable is fine
+            agenda = ""
         return (
             f"当前时间：{now.year}年{now.month}月{now.day}日，{weekday}，"
-            f"{period}{h12}点{now.minute:02d}分。"
+            f"{period}{h12}点{now.minute:02d}分。{agenda}"
         )
 
     def _system_body(self, memory_ctx: str = "") -> str:
@@ -1015,6 +1173,8 @@ class Orchestrator:
         voice_block = self.voice_settings.describe_for_prompt() if hasattr(self, "voice_settings") and self.voice_settings else ""
         if voice_block:
             sys_body = f"{sys_body}\n\n{voice_block}".strip()
+        if sys_body:   # the rules she wrote for herself about talking (learning.selftune keeps them)
+            sys_body = selfprompt.apply(sys_body, "voice")
         if memory_ctx:
             sys_body = f"{sys_body}\n\n{apply_title(memory_ctx, getattr(self, 'user_title', DEFAULT_TITLE), for_prompt=True)}"
         if not sys_body:
@@ -1022,19 +1182,63 @@ class Orchestrator:
         # Prepend live datetime so model can answer time/date questions correctly
         return f"{self._datetime_context()}\n{sys_body}"
 
+    def _history_for_prompt(self, sys_text: str, user_text: str) -> list[tuple[str, str]]:
+        """The last turns (whoever answered them: local model, teacher, agent, memory) that fit the local
+        model's small context. Answers are clipped; the oldest turns go first when the budget runs out."""
+        n = getattr(self, "history_max_turns", 0)
+        if n <= 0:
+            return []
+        budget = (getattr(self, "llm_context_tokens", 768) - getattr(self, "max_new_tokens", 200)
+                  - _est_tokens(sys_text) - _est_tokens(user_text) - 24)
+        picked: list[tuple[str, str]] = []
+        for t in reversed(getattr(self, "_recent", [])[-n:]):
+            q, a = _clip(t["q"], 40), _clip(t["a"], 70)
+            cost = _est_tokens(q) + _est_tokens(a) + 12  # + the chat-template tokens around them
+            if cost > budget:
+                break
+            budget -= cost
+            picked.append((q, a))
+        return list(reversed(picked))
+
     def _build_llm_prompt(self, user_text: str, memory_ctx: str = "") -> str:
         prompt = ""
         sys_text = self._system_body(memory_ctx)
         if sys_text:
             prompt += f"<|im_start|>system\n{sys_text}<|im_end|>\n"
-        if self.history_max_turns > 0:
-            for user, assistant in self._chat_turns[-self.history_max_turns :]:
-                prompt += f"<|im_start|>user\n{user.strip()}<|im_end|>\n<|im_start|>assistant\n{assistant.strip()}<|im_end|>\n"
+        history = self._history_for_prompt(sys_text, user_text)
+        self._last_history_turns = len(history)
+        for user, assistant in history:
+            prompt += f"<|im_start|>user\n{user}<|im_end|>\n<|im_start|>assistant\n{assistant}<|im_end|>\n"
         prompt += f"<|im_start|>user\n{user_text.strip()}<|im_end|>\n<|im_start|>assistant\n"
         return prompt
 
     def _reply_hit_segment_limit(self, reply: dict) -> bool:
         return reply.get("finish_reason") == "length"
+
+    def _mark_activity(self) -> None:
+        """Owner just talked/typed (or the agent is busy): background practice (learning/practice.py) waits."""
+        root = getattr(self, "agent_root", None)
+        if root is None:
+            return
+        try:
+            path = root / "run" / "last_activity"
+            path.touch()
+            os.utime(path, None)
+        except OSError:
+            pass
+
+    def _push_recent(self, question: str, answer: str, who: str) -> None:
+        turns = getattr(self, "_recent", None)
+        if turns is not None and question and answer:
+            turns.append({"q": question, "a": answer, "who": who})
+            del turns[:-8]
+
+    def _journal(self, question: str, answer: str, who: str, reason: str = "", *, recent: bool = True) -> None:
+        journal_dir = getattr(self, "journal_dir", None)
+        if journal_dir is not None:
+            log_turn(journal_dir, question, answer, who=who, reason=reason)
+        if recent:
+            self._push_recent(question, answer, who)
 
     def _record_chat_turn(self, user: str, assistant: str) -> None:
         if self.history_max_turns <= 0:
@@ -1410,6 +1614,11 @@ class Orchestrator:
                 asyncio.create_task(self._apply_camera_url_change(url))
         elif mtype in ("get_status", "status", "ping"):
             await self._broadcast_status()
+        elif mtype == "agent_approve":
+            fut = getattr(self, "_agent_pending", {}).get(str(data.get("id", "")))
+            if fut is not None and not fut.done():
+                fut.set_result(("always" if data.get("remember") else "task" if data.get("task") else "once")
+                               if data.get("ok") else "deny")
         elif mtype in ("stop", "abort", "tts_abort"):
             await self._abort_tts_playback()
             self.set_state(AgentState.LISTEN)
@@ -1431,6 +1640,7 @@ class Orchestrator:
                     pass
 
     async def _handle_direct_chat(self, text: str) -> None:
+        self._mark_activity()
         self._next_turn_id += 1
         generation = self._next_turn_id
         self._active_turn_id = generation
@@ -1440,6 +1650,9 @@ class Orchestrator:
         if hasattr(self.tts_queue, "mark_utterance_start"):
             self.tts_queue.mark_utterance_start(generation)
         try:
+            text, creds = extract_credentials(text)  # before normalizing mangles it
+            if creds:
+                self._pending_creds = creds
             clean_text = normalize_user_text(text)
             if clean_text:
                 await self.emit({"type": "asr_final", "text": clean_text, "generation": generation, "source": "web"})
@@ -1879,9 +2092,14 @@ class Orchestrator:
     ) -> None:
         user_prompt = prompt
         self.set_state(AgentState.LLM)
+        intent_ack_played = False  # the ack was already said while classifying
+        pushed_recent = False  # this turn is already in self._recent
+        forced_teacher = None  # the intent classifier sent this to the teacher
 
         u_clean = user_prompt.strip()
         normalized = normalize_spoken_text(u_clean)
+        if len(normalized) >= 4:
+            self._mark_activity()   # a real sentence (not "哎" / "谢" / room noise): background study waits
 
         if not is_companion:
             if is_resume_command(normalized):
@@ -1902,6 +2120,16 @@ class Orchestrator:
                 return
 
             self._paused_relay_text = None
+
+            pending = getattr(self, "_agent_pending", None)
+            if pending:
+                answer = approval_answer(u_clean)
+                if answer is not None:
+                    for fut in list(pending.values()):
+                        if not fut.done():
+                            fut.set_result(answer)
+                    LOG.info("[agent] spoken approval: %s", answer)
+                    return
 
             # Before the filler filter: normalize_spoken_text collapses "谢谢" to "谢",
             # which the single-char rule below would otherwise drop as noise.
@@ -1935,6 +2163,16 @@ class Orchestrator:
                 self._record_chat_turn(user_prompt, reply)
                 return
 
+            vol = parse_volume_command(u_clean, self._speaker_volume_percent()) if hasattr(self, "audio_profile") else None
+            if vol is not None:
+                target, reply = vol
+                if target is not None and target != self._speaker_volume_percent():
+                    await self._apply_settings_patch({"speaker_volume": target})
+                LOG.info("[volume] voice command: %s -> %s", u_clean[:24], target)
+                await self._speak_turn(reply, generation=generation)
+                self._record_chat_turn(user_prompt, reply)
+                return
+
             quick = quick_reply_for(u_clean) if getattr(self, "quick_reply_enabled", False) else None
             if quick:
                 LOG.info("[llm] quick reply (skip LLM): %s", quick)
@@ -1963,6 +2201,53 @@ class Orchestrator:
                 self._record_chat_turn(user_prompt, voice_reply)
                 return
 
+            # "开个项目：…" / "项目做得怎么样": she works on projects by herself (learning/project.py)
+            from learning.project import project_command
+            proj = project_command(user_prompt)
+            if proj is not None:
+                reply = await asyncio.to_thread(proj)
+                LOG.info("[project] %s -> %s", user_prompt[:60], reply[:80])
+                await self._speak_turn(reply, generation=generation)
+                self._record_chat_turn(user_prompt, reply)
+                return
+
+            # 先分类: the teacher reads the recent turns and says what is wanted (task / knowledge / ...)
+            teacher = getattr(self, "teacher", None)
+            if teacher is not None and getattr(self, "teacher_enabled", False) and getattr(self, "skills", None) is not None:
+                if getattr(self, "ack_enabled", False) and not intent_ack_played:
+                    intent_ack_played = await self._play_ack(user_prompt, generation=generation)  # covers the classify call
+                intent = await asyncio.to_thread(classify_intent, teacher, user_prompt, list(getattr(self, "_recent", [])), known_ssh_hosts())
+            else:
+                from learning.intent import fallback as intent_fallback
+                intent = intent_fallback(u_clean)
+            LOG.info("[intent] %s (%s): %s", intent.kind, intent.by, intent.rewrite[:80])
+            if intent.kind == "unclear" and len(normalized) > 4:
+                LOG.info("[intent] 'unclear' but readable: answer with context instead")
+                from learning.intent import Intent
+                intent = Intent("chat", intent.rewrite or user_prompt, "readable", intent.by)
+            if intent.kind == "unclear":
+                reply = "这句我没听明白，能换个说法再说一遍吗？"
+                await self._speak_turn(reply, generation=generation)
+                self._journal(user_prompt, reply, "intent", "unclear")
+                return
+            if intent.kind == "task" and getattr(self, "skills", None) is not None:
+                if getattr(self, "_agent_running", False):
+                    await self._speak_turn("我手上还有一件事没做完，做完再来办这个。", generation=generation)
+                else:
+                    creds = getattr(self, "_pending_creds", None)
+                    if creds and time.monotonic() - creds.at > 600:
+                        creds = self._pending_creds = None  # said too long ago to belong to this request
+                    if creds and not creds.host:
+                        _, again = extract_credentials(intent.rewrite + " 密码 x")
+                        creds.host = again.host if again else ""
+                    self._pending_creds = None if (creds and creds.host) else creds  # keep it until a host is known
+                    use = creds if (creds and creds.host) else None
+                    LOG.info("[agent] task: %s%s", intent.rewrite[:80], " (with credentials)" if use else "")
+                    self._agent_task = asyncio.create_task(self._run_agent(intent.rewrite, use))
+                return
+            if intent.kind in ("knowledge", "ask_teacher"):
+                forced_teacher = intent
+
             if should_skip_llm(user_prompt):
                 speak = canned_reply_for(user_prompt) or persona_reply_for(user_prompt)
                 LOG.info("[llm] fast-path (skip LLM): %s", speak[:48])
@@ -1973,6 +2258,7 @@ class Orchestrator:
         learn_route = None
         memory_ctx = ""
         memory = getattr(self, "memory", None)  # absent when the learning layer is not set up
+        forced = forced_teacher
         if not is_companion and memory is not None:
             correction = bool(getattr(self, "_last_qa", None)) and is_correction(user_prompt)
             mem_hit = None if correction else await asyncio.to_thread(memory.best_answer, user_prompt)
@@ -1982,23 +2268,27 @@ class Orchestrator:
                 teacher_ok=bool(getattr(self, "teacher_enabled", False) and teacher and teacher.available),
                 memory_answer=mem_hit.answer if mem_hit else "", correction=correction,
             )
+            if forced is not None and learn_route.who != "teacher" and teacher is not None and teacher.available:
+                if not (forced.kind == "knowledge" and learn_route.who == "memory"):
+                    learn_route = Route("teacher", forced.kind)  # the classifier says: this needs the teacher
             LOG.info("[learn] route=%s (%s)", learn_route.who, learn_route.reason)
             if learn_route.who == "memory":
                 await self._speak_turn(learn_route.memory_answer, generation=generation)
                 self._record_chat_turn(user_prompt, learn_route.memory_answer)
+                self._journal(user_prompt, learn_route.memory_answer, "memory", learn_route.reason)
                 self._last_qa = (user_prompt, learn_route.memory_answer)
                 return
             memory_ctx = await asyncio.to_thread(memory.context_for, user_prompt)
 
-        ack_played = False
-        if not is_companion and getattr(self, "ack_enabled", False):
+        ack_played = intent_ack_played
+        if not ack_played and not is_companion and getattr(self, "ack_enabled", False):
             ack_played = await self._play_ack(user_prompt, generation=generation)
 
         await self._prepare_llm_call()
         prompt = self._build_llm_prompt(user_prompt, memory_ctx)
         LOG.info(
             "[llm] hist=%d/%d prompt %d chars · user=%s",
-            len(self._chat_turns),
+            getattr(self, "_last_history_turns", 0),
             self.history_max_turns,
             len(prompt),
             user_prompt[:48],
@@ -2025,7 +2315,10 @@ class Orchestrator:
                 return llm_chat_stream(prompt, on_token, sock_path=self.socket_path, max_new_tokens=self.max_new_tokens)
 
             if use_teacher:
-                teacher_user = user_prompt
+                teacher_user = forced.rewrite if forced is not None else user_prompt
+                ctx = recent_block(getattr(self, "_recent", []))
+                if ctx:
+                    teacher_user = f"最近的对话（供理解上下文）：\n{ctx}\n\n主人现在说：{user_prompt}\n（意思是：{teacher_user}）"
                 if learn_route.reason == "correction" and self._last_qa:
                     teacher_q, teacher_wrong = self._last_qa
                     teacher_user = (f"刚才主人问：{teacher_q}\n你回答：{teacher_wrong}\n主人说：{user_prompt}\n"
@@ -2164,6 +2457,9 @@ class Orchestrator:
                 if not self._tts_abort:
                     await self._emit_reply_final(full)
             elif not self._tts_abort:
+                if full.strip():
+                    self._push_recent(user_prompt, full, "teacher" if use_teacher and reply.get("teacher") else "local")
+                    pushed_recent = True
                 try:
                     await self.tts_queue.wait_done(generation=generation)
                 finally:
@@ -2174,6 +2470,9 @@ class Orchestrator:
                 self._listen_cooldown_until = time.monotonic() + self.listen_cooldown_sec
                 if full.strip():
                     self._record_chat_turn(user_prompt, full)
+                    answered_by = "teacher" if use_teacher and reply.get("teacher") else "local"
+                    self._journal(user_prompt, full, answered_by, learn_route.reason if learn_route else "",
+                                  recent=not pushed_recent)
 
             first_play_at = self.tts_queue.first_play_at
             if first_play_at is not None:
@@ -2218,6 +2517,88 @@ class Orchestrator:
             if ack_played and int(tts_state["n"]) == 0:
                 self._speaking = False
 
+    # ---------------------------------------------------------------- agent (learn by doing)
+    async def _agent_say(self, text: str) -> None:
+        """Speak from the background agent: wait for the current turn to finish, then take a turn of its own."""
+        for _ in range(120):
+            if not self._turn_busy and not self._speaking:
+                break
+            await asyncio.sleep(0.25)
+        self._next_turn_id += 1
+        generation = self._next_turn_id
+        self._active_turn_id = generation
+        self._tts_abort = False
+        self.tts_queue.mark_utterance_start(generation)
+        await self._speak_turn(text, generation=generation)
+        await self.tts_queue.wait_done(generation=generation)
+        if generation == self._active_turn_id and not self._turn_busy:
+            self.set_state(AgentState.LISTEN)
+
+    async def _agent_approve(self, step: dict, why: str, risk: str = "ask") -> str:
+        """Ask the owner (voice + web page) before a step that is not known read-only; no answer = no.
+        -> "once" | "always" (remember: ask-level only) | "deny". Danger-level steps are asked every time."""
+        aid = uuid.uuid4().hex[:8]
+        fut: asyncio.Future = asyncio.get_running_loop().create_future()
+        self._agent_pending[aid] = fut
+        action = describe_step(step)
+        danger = risk == "danger"
+        LOG.info("[agent] approval %s: %s (%s, %s)", aid, action, risk, why)
+        await self.emit({"type": "agent_confirm", "id": aid, "action": action, "why": why, "risk": risk,
+                         "rememberable": not danger, "purpose": str(step.get("purpose") or "")})
+        # short spoken question (a task may ask several times); the full command is on the web page
+        first_ask = not getattr(self, "_agent_asked", False)  # "这次都行" not explained yet in this task
+        purpose = re.sub(r"[。.！!？?，,\s]+$", "", str(step.get("purpose") or ""))
+        what = _spoken_step(step)
+        head = f"{purpose}，要{what}" if purpose else f"要{what}"
+        if not fut.done():  # already answered on the web page: don't ask out loud
+            if danger:
+                backup = "我会先存备份，" if step.get("tool") == "shell" else ""
+                await self._agent_say(f"{head}。这步有风险，{why}，{backup}行吗？")
+            elif first_ask:  # explained on the first ask-level question (danger steps can't use it)
+                self._agent_asked = True
+                await self._agent_say(f"{head}，行吗？说确认；说这次都行，这个任务就不再一步步问你。")
+            else:
+                await self._agent_say(f"{head}，行吗？")
+        try:
+            answer = str(await asyncio.wait_for(fut, timeout=self.agent_approval_timeout))
+        except asyncio.TimeoutError:
+            answer = "deny"
+            await self._agent_say("没等到你的确认，这一步我就不做了。")
+        finally:
+            self._agent_pending.pop(aid, None)
+            await self.emit({"type": "agent_confirm_closed", "id": aid})
+        if answer in ("always", "task") and danger:
+            answer = "once"  # dangerous steps are never remembered, not even for the rest of the task
+            await self._agent_say("这一步有风险，我只做这一次，下次还会问你。")
+        LOG.info("[agent] approval %s -> %s", aid, answer)
+        return answer
+
+    async def _run_agent(self, task: str, creds: Credentials | None = None) -> None:
+        async def progress(p: dict) -> None:
+            await self.emit({"type": "agent_step", **p})
+
+        agent = Agent(self.teacher, self.skills, approve=self._agent_approve, say=self._agent_say, progress=progress,
+                      mcp=getattr(self, "mcp", None),
+                      local_plan=local_planner(self.socket_path) if getattr(self, "agent_local_first", False) else None,
+                      sandbox=sandbox_run_step if getattr(self, "agent_sandbox", False) else None,
+                      grants=getattr(self, "grants", None), log_training=lambda q, a: self.learner.log_training(q, a, system=self._system_body()))
+        await self.emit({"type": "agent_start", "task": task})
+        self._agent_asked = False  # the first question of a task explains "这次都行"
+        self._mark_activity()
+        self._agent_running = True
+        try:
+            res = await agent.run(task, creds)
+        except Exception:  # noqa: BLE001
+            LOG.exception("[agent] crashed")
+            res = AgentResult(False, "出了点意外，这次没做成。")
+        finally:
+            self._agent_running = False  # busy until the result is in, not until the summary is spoken
+        LOG.info("[agent] done ok=%s learned=%s steps=%d: %s", res.ok, res.learned, len(res.steps), res.say[:80])
+        await self.emit({"type": "agent_done", "ok": res.ok, "learned": res.learned, "say": res.say})
+        await self._emit_reply_final(res.say)
+        await self._agent_say(res.say)
+        self._journal(task, res.say, "agent", "ok" if res.ok else "failed")
+
     async def _play_ack(self, user_text: str, *, generation: int) -> bool:
         """Say a fitting ack ("好嘞，" / "我看看，" ...) from a cached clip right away, before the LLM answer."""
         cache = getattr(self, "_ack_cache", {})
@@ -2237,32 +2618,59 @@ class Orchestrator:
         return True
 
     async def _warm_ack_cache(self) -> None:
-        """Pre-synthesize ack phrases for the current voice/speed so they play instantly."""
-        if not self.ack_enabled:
+        """Pre-synthesize ack phrases and fixed replies for the current voice/speed so they play instantly."""
+        if not self.ack_enabled and not getattr(self, "quick_reply_enabled", False):
             return
         rt = self.voice_settings.runtime if getattr(self, "voice_settings", None) else None
         tag = f"{getattr(rt, 'voice_id', 'default')}_{getattr(rt, 'speed', 1.0):.2f}"
         cache_dir = self.agent_root / "run" / "ack_cache"
         cache_dir.mkdir(parents=True, exist_ok=True)
-        fresh: dict[str, Path] = {}
-        for phrase in ACK_PHRASES:
-            # keyed by content, so editing the phrase list never maps a name to the wrong clip
-            digest = hashlib.md5(phrase.encode("utf-8")).hexdigest()[:8]
-            path = cache_dir / f"ack_{tag}_{digest}.wav"
-            # sampling TTS (qwen3) can occasionally run on past the phrase: retry long clips
-            max_sec = 0.6 + 0.3 * len(phrase)
+
+        async def clip(text: str, prefix: str) -> Path | None:
+            # keyed by content, so editing a phrase never maps a name to the wrong clip
+            digest = hashlib.md5(text.encode("utf-8")).hexdigest()[:8]
+            path = cache_dir / f"{prefix}_{tag}_{digest}.wav"
+            # sampling TTS (qwen3) can occasionally run on past the phrase or come out nearly
+            # silent: retry long or silent clips
+            max_sec = 0.6 + 0.3 * len(text)
+
+            def good() -> bool:
+                return (path.is_file() and path.stat().st_size >= 1000 and _wav_seconds(path) <= max_sec
+                        and _wav_voiced_share(path) >= MIN_VOICED_SHARE)
+
             try:
                 for _ in range(4):
-                    if path.is_file() and path.stat().st_size >= 1000 and _wav_seconds(path) <= max_sec:
+                    if await asyncio.to_thread(good):
                         break
-                    await self.tts_queue.synthesize_to(phrase, path)
+                    await self.tts_queue.synthesize_to(text, path)
                 if _wav_seconds(path) > max_sec:
                     raise RuntimeError(f"clip too long ({_wav_seconds(path):.1f}s)")
-                fresh[phrase] = path
+                if _wav_voiced_share(path) < MIN_VOICED_SHARE:
+                    raise RuntimeError(f"clip nearly silent ({_wav_voiced_share(path):.0%} voiced)")
+                return path
             except Exception as exc:
-                LOG.warning("[llm] ack cache %r failed: %s", phrase, exc)
-        self._ack_cache = fresh
-        LOG.info("[llm] ack cache ready (%d phrases, %s)", len(fresh), tag)
+                LOG.warning("[llm] %s cache %r failed: %s", prefix, text, exc)
+                return None
+
+        if self.ack_enabled:
+            fresh: dict[str, Path] = {}
+            for phrase in ACK_PHRASES:
+                if (path := await clip(phrase, "ack")) is not None:
+                    fresh[phrase] = path
+            self._ack_cache = fresh
+            LOG.info("[llm] ack cache ready (%d phrases, %s)", len(fresh), tag)
+        if getattr(self, "quick_reply_enabled", False):
+            # cache clause by clause, the way _speak_extracted sends them, keyed by the spoken form
+            clips: dict[str, Path] = {}
+            for reply in [*fixed_replies(), *FIXED_SPOKEN]:
+                for sent in extract_speak_sentences(reply, max_cjk=99999):
+                    for clause in split_tts_clauses(sent):
+                        key = self.tts_queue.spoken_form(sanitize_tts_text(clause))
+                        if key and key not in clips and is_speakable(key):
+                            if (path := await clip(key, "clip")) is not None:
+                                clips[key] = path
+            self.tts_queue.clip_cache = clips
+            LOG.info("[tts] fixed reply clips ready (%d clauses, %s)", len(clips), tag)
 
     async def run(self, inject_wav: str | None = None) -> None:
         self._loop = asyncio.get_running_loop()
@@ -2283,6 +2691,8 @@ class Orchestrator:
         await self.tts_queue.start()
         asyncio.create_task(self._warm_ack_cache())
         asyncio.create_task(self._boot_selftest())
+        asyncio.create_task(self._selfheal_notice())
+        asyncio.create_task(self._notice_loop())
         try:
             if self.api_enabled:
                 try:

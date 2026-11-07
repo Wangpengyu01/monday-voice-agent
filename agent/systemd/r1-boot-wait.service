@@ -1,0 +1,13 @@
+[Unit]
+Description=星期一 boot wait voice (says it is still starting until the models are ready)
+After=r1-boot-chime.service sound.target
+Wants=sound.target
+
+[Service]
+Type=simple
+User=root
+ExecStart=/bin/bash /userdata/agent/scripts/boot_wait_voice.sh
+TimeoutStopSec=5
+
+[Install]
+WantedBy=multi-user.target

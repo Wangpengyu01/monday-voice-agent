@@ -8,6 +8,9 @@ Type=simple
 User=youyeetoo
 Group=youyeetoo
 WorkingDirectory=/userdata/agent/ui
+# plain http://<board IPv4>/ with no port: bind 80 as an unprivileged user
+Environment=UI_PORT=80
+AmbientCapabilities=CAP_NET_BIND_SERVICE
 ExecStart=/usr/bin/python3 /userdata/agent/ui/server.py
 Restart=on-failure
 RestartSec=3

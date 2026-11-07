@@ -62,6 +62,8 @@ class TtsQueue:
         self._forward_task: asyncio.Task | None = None
         # applied to every spoken text (the orchestrator swaps "主人" for the user's title here)
         self.text_filter: Callable[[str], str] | None = None
+        # pre-synthesized clips for fixed replies, keyed by spoken_form(text): played without synthesis
+        self.clip_cache: dict[str, Path] = {}
 
     @property
     def is_playing(self) -> bool:
@@ -156,18 +158,24 @@ class TtsQueue:
     def first_play_at(self) -> float | None:
         return self._first_play_at
 
+    def spoken_form(self, text: str) -> str:
+        """The text exactly as it would be synthesized (title swap, cleanup, pronunciation fixes)."""
+        if self.text_filter is not None:
+            text = self.text_filter(text)
+        return fix_tts_pronunciation(sanitize_tts_text(text))
+
     async def enqueue(self, text: str, *, generation: int | None = None) -> None:
         generation = self._active_generation if generation is None else generation
         if self._interrupted.is_set() or generation != self._active_generation:
             return
-        if self.text_filter is not None:
-            text = self.text_filter(text)
-        text = sanitize_tts_text(text)
-        text = fix_tts_pronunciation(text)
+        text = self.spoken_form(text)
         if not is_speakable(text):
             return
+        wav = self.clip_cache.get(text)
+        if wav is not None and not wav.is_file():
+            wav = None
         self._utterance_chunks += 1
-        await self._text_q.put(_TextItem(generation, text))
+        await self._text_q.put(_TextItem(generation, text, wav))
 
     async def enqueue_wav(self, text: str, wav: Path, *, generation: int | None = None) -> bool:
         """Queue an already-synthesized clip; keeps order with text items."""

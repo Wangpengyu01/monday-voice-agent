@@ -1,0 +1,16 @@
+[Unit]
+Description=星期一 daily backup (new snapshot + learned data to the backup server, local and remote cleanup)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=youyeetoo
+Group=youyeetoo
+WorkingDirectory=/userdata/agent
+ExecStart=/usr/bin/python3 -m ops.backup
+StandardOutput=append:/userdata/agent/logs/backup.log
+StandardError=append:/userdata/agent/logs/backup.log
+TimeoutStartSec=3600
+Nice=10
+IOSchedulingClass=idle

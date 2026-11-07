@@ -1,0 +1,9 @@
+[Unit]
+Description=星期一 checks the owner's file window every 3 minutes
+
+[Timer]
+OnBootSec=3min
+OnUnitActiveSec=3min
+
+[Install]
+WantedBy=timers.target

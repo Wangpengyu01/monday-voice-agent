@@ -1,0 +1,16 @@
+[Unit]
+Description=星期一 quiet practice (the teacher quizzes the local model on its weak spots while idle)
+After=network-online.target r1-llm-daemon.service
+
+[Service]
+Type=oneshot
+User=youyeetoo
+Group=youyeetoo
+WorkingDirectory=/userdata/agent
+EnvironmentFile=-/userdata/secrets/deepseek.env
+# one learner at a time on the local model (school / practice / reflect share the lock)
+ExecStart=/usr/bin/flock -n -E 0 /tmp/monday-study.lock /usr/bin/python3 -m learning.practice
+StandardOutput=append:/userdata/agent/logs/practice.log
+StandardError=append:/userdata/agent/logs/practice.log
+TimeoutStartSec=900
+Nice=15

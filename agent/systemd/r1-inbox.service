@@ -1,0 +1,16 @@
+[Unit]
+Description=星期一 reads the files the owner gave her (web page -> 主人 tab -> 给星期一)
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=youyeetoo
+Group=youyeetoo
+WorkingDirectory=/userdata/agent
+EnvironmentFile=-/userdata/secrets/deepseek.env
+# teacher only, no local model: does not take the study lock
+ExecStart=/usr/bin/python3 -m learning.inbox
+StandardOutput=append:/userdata/agent/logs/owner.log
+StandardError=append:/userdata/agent/logs/owner.log
+TimeoutStartSec=900
+Nice=10

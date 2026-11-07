@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>星期一 M.O.N.D.A.Y. · 成果展示</title>
+<link rel="icon" href="/favicon.svg">
+<style>
+:root { --line: rgba(255,255,255,.16); --dim: rgba(235,240,255,.62); --cyan: #64d2ff; --violet: #a78bfa; --green: #4cd98a; --amber: #ffcc66; }
+* { box-sizing: border-box; }
+body { margin: 0; color: #f2f5ff; font: 15px/1.65 -apple-system, "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+  background: radial-gradient(1200px 700px at 12% -10%, #27346b 0%, transparent 60%), radial-gradient(900px 600px at 95% 10%, #4b2a6e 0%, transparent 55%),
+  radial-gradient(900px 700px at 50% 110%, #0f4a5c 0%, transparent 60%), #070a16; min-height: 100vh; }
+.wrap { max-width: 1160px; margin: 0 auto; padding: 48px 24px 80px; }
+.glass { background: rgba(255,255,255,.07); border: 1px solid var(--line); border-radius: 22px; backdrop-filter: blur(22px) saturate(160%);
+  -webkit-backdrop-filter: blur(22px) saturate(160%); box-shadow: 0 10px 40px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.12); }
+header { display: grid; grid-template-columns: 1fr auto; gap: 28px; align-items: center; margin-bottom: 34px; }
+.orb { width: 150px; height: 150px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff8, transparent 40%),
+  conic-gradient(from 0deg, #64d2ff, #a78bfa, #ff7ab2, #4cd98a, #64d2ff); filter: blur(.3px) saturate(130%); animation: spin 14s linear infinite;
+  box-shadow: 0 0 80px #64d2ff55, 0 0 140px #a78bfa44; }
+@keyframes spin { to { transform: rotate(360deg); } }
+h1 { font-size: 46px; line-height: 1.1; margin: 0 0 8px; letter-spacing: 1px; }
+h1 small { display: block; font-size: 17px; font-weight: 500; color: var(--dim); letter-spacing: 4px; margin-top: 10px; }
+.lead { font-size: 17px; color: #dfe6ff; max-width: 760px; margin: 14px 0 0; }
+.live { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--dim); margin-top: 14px; }
+.dot { width: 9px; height: 9px; border-radius: 50%; background: var(--green); box-shadow: 0 0 10px var(--green); animation: pulse 2s infinite; }
+@keyframes pulse { 50% { opacity: .35; } }
+h2 { font-size: 22px; margin: 46px 0 16px; display: flex; align-items: center; gap: 10px; }
+h2::before { content: ""; width: 5px; height: 22px; border-radius: 3px; background: linear-gradient(var(--cyan), var(--violet)); }
+.stats { display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px; }
+.stat { padding: 18px 16px; text-align: center; }
+.stat b { display: block; font-size: 34px; font-variant-numeric: tabular-nums; background: linear-gradient(90deg, var(--cyan), var(--violet));
+  -webkit-background-clip: text; background-clip: text; color: transparent; }
+.stat span { font-size: 13px; color: var(--dim); }
+.cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.card { padding: 20px 20px 18px; }
+.card .ic { font-size: 26px; }
+.card h3 { margin: 6px 0 6px; font-size: 17px; }
+.card p { margin: 0; color: var(--dim); font-size: 14px; }
+.loop { padding: 26px; }
+.flow { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px; }
+.node { padding: 10px 16px; border-radius: 14px; background: rgba(255,255,255,.09); border: 1px solid var(--line); text-align: center; min-width: 120px; }
+.node b { display: block; font-size: 14.5px; } .node span { font-size: 12px; color: var(--dim); }
+.arrow { color: var(--cyan); font-size: 20px; }
+.teacher { margin-top: 16px; text-align: center; color: var(--dim); font-size: 13.5px; }
+.two { display: grid; grid-template-columns: 1.1fr .9fr; gap: 16px; }
+.pad { padding: 22px; }
+.bar { height: 10px; border-radius: 5px; background: rgba(255,255,255,.12); overflow: hidden; margin: 10px 0 6px; }
+.bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--cyan), var(--violet)); border-radius: 5px; transition: width 1s; }
+.cmp { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+.cmp div { border-radius: 14px; padding: 10px 12px; font-size: 13px; background: rgba(0,0,0,.25); border: 1px solid var(--line); white-space: pre-wrap; word-break: break-word; }
+.cmp .bad { border-color: #ff7ab255; } .cmp .good { border-color: #4cd98a66; }
+.cmp i { font-style: normal; font-size: 12px; color: var(--dim); display: block; margin-bottom: 4px; }
+.q { font-size: 13.5px; margin-top: 14px; color: #dfe6ff; }
+.big { font-size: 40px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.big em { font-style: normal; color: var(--green); }
+.steps { list-style: none; margin: 10px 0 0; padding: 0; }
+.steps li { display: flex; justify-content: space-between; gap: 10px; padding: 7px 0; border-bottom: 1px dashed var(--line); font-size: 14px; }
+.tag { font-size: 12px; padding: 1px 9px; border-radius: 999px; background: rgba(255,255,255,.1); white-space: nowrap; }
+.tag.done { background: #4cd98a33; color: #b8ffd6; } .tag.running { background: #64d2ff33; color: #c9f0ff; } .tag.ask { background: #ffcc6633; color: #ffe2a8; }
+.lessons { columns: 2; column-gap: 18px; font-size: 13.5px; }
+.lessons div { break-inside: avoid; padding: 5px 0; display: flex; justify-content: space-between; gap: 8px; border-bottom: 1px dashed var(--line); }
+.tiers { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.tier { padding: 16px; } .tier b { font-size: 15px; } .tier p { margin: 6px 0 0; font-size: 13px; color: var(--dim); }
+.stack { display: flex; flex-wrap: wrap; gap: 8px; }
+.stack span { font-size: 13px; padding: 6px 12px; border-radius: 999px; background: rgba(255,255,255,.08); border: 1px solid var(--line); }
+footer { margin-top: 50px; text-align: center; color: var(--dim); font-size: 13px; }
+@media (max-width: 900px) { .stats { grid-template-columns: repeat(3, 1fr); } .cards, .two, .tiers { grid-template-columns: 1fr; } header { grid-template-columns: 1fr; } .orb { display: none; } .lessons { columns: 1; } h1 { font-size: 34px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>星期一 · M.O.N.D.A.Y.<small>一块开发板上的、会自己学习的语音助手</small></h1>
+      <p class="lead">跑在 youyeetoo R1（RK3588 + RK1828）上的本地语音助手：听、想、说全部在板子上完成。
+        不会的事情她会去问老师（DeepSeek），学会了存进记忆；每天自省、按课表上课，攒下的对话还会拿去微调自己的大脑。</p>
+      <div class="live"><i class="dot"></i><span id="liveTxt">实时数据加载中…</span></div>
+    </div>
+    <div class="orb"></div>
+  </header>
+
+  <div class="stats">
+    <div class="stat glass"><b id="sKnow">–</b><span>学会的知识</span></div>
+    <div class="stat glass"><b id="sLesson">–</b><span>记下的教训</span></div>
+    <div class="stat glass"><b id="sSkill">–</b><span>掌握的技能</span></div>
+    <div class="stat glass"><b id="sClass">–</b><span>上过的课</span></div>
+    <div class="stat glass"><b id="sMaster">–</b><span>掌握的课</span></div>
+    <div class="stat glass"><b id="sUp">–</b><span>连续运行</span></div>
+  </div>
+
+  <h2>她能做什么</h2>
+  <div class="cards">
+    <div class="card glass"><div class="ic">🎙️</div><h3>全本地语音对话</h3><p>语音识别、Qwen3.5-4B 大模型、Qwen3-TTS 语音合成都在板子的 NPU 上跑，不联网也能聊；记得住最近 5 轮上下文。</p></div>
+    <div class="card glass"><div class="ic">🧭</div><h3>先听懂再动手</h3><p>每句话先分类：闲聊、知识、要办的事、该问老师的。连续数字、英文缩写不会被识别吞掉，听不清也不再敷衍。</p></div>
+    <div class="card glass"><div class="ic">🛠️</div><h3>独立 Agent</h3><p>要办的事：问老师怎么做 → 自己一步步执行 → 让老师验证对不对。能执行命令、SSH 到其他机器、并行拆分任务。</p></div>
+    <div class="card glass"><div class="ic">🧩</div><h3>技能与外部工具</h3><p>学会的做法存成技能，下次直接复用；支持 SKILL.md 技能包和 MCP 外部工具（比如联网抓网页）。</p></div>
+    <div class="card glass"><div class="ic">🩹</div><h3>自愈与备份</h3><p>服务崩了自动拉起，危险操作前先打快照，坏了能回滚；每天凌晨备份到 500G 备份服务器。</p></div>
+    <div class="card glass"><div class="ic">🪟</div><h3>玻璃风控制台</h3><p>局域网直接打开 IPv4 地址：看状态、文件、记忆、课堂、日志、进度，确认危险操作也在这里点。</p></div>
+  </div>
+
+  <h2>她怎么自己变强</h2>
+  <div class="loop glass">
+    <div class="flow">
+      <div class="node"><b>每次对话</b><span>写进日记</span></div><div class="arrow">→</div>
+      <div class="node"><b>每晚反思</b><span>老师打分、纠错</span></div><div class="arrow">→</div>
+      <div class="node"><b>记忆库</b><span>知识 / 教训 / 技能</span></div><div class="arrow">→</div>
+      <div class="node"><b>空闲练习</b><span>每 20 分钟</span></div><div class="arrow">→</div>
+      <div class="node"><b>上课</b><span>每 30 分钟一节</span></div><div class="arrow">→</div>
+      <div class="node"><b>LoRA 微调</b><span>A100 上训练</span></div><div class="arrow">→</div>
+      <div class="node"><b>回到板子</b><span>更聪明的自己</span></div>
+    </div>
+    <div class="teacher">老师：DeepSeek · 学生：板子上的 Qwen3.5-4B · 每天第一节课先自省「我是谁、我要干什么、我缺什么」</div>
+  </div>
+
+  <h2>第一次给自己的大脑做微调</h2>
+  <div class="two">
+    <div class="pad glass">
+      <div style="color:var(--dim);font-size:13.5px">没参与训练的考题上的验证损失（越低越好）</div>
+      <div class="big"><span id="lBefore">1.83</span> → <em id="lAfter">1.22</em></div>
+      <div style="color:var(--dim);font-size:13.5px"><span id="lSamples">165</span> 条自己的对话和课堂题 · 只训练 0.67% 的参数 · A100 上 14 分钟</div>
+      <div id="cmpBox"></div>
+    </div>
+    <div class="pad glass">
+      <b>从训练到回到板子</b>
+      <div class="bar"><i id="pBar" style="width:0"></i></div>
+      <div style="color:var(--dim);font-size:13px" id="pStage"></div>
+      <ul class="steps" id="pSteps"></ul>
+      <p style="color:var(--dim);font-size:12.5px;margin:12px 0 0">自己把模型从原始权重转成 RK1828 格式，和官方发布的版本大小一致——这条路打通了，以后攒的数据越多，她就越像她自己。</p>
+    </div>
+  </div>
+
+  <h2>课堂</h2>
+  <div class="two">
+    <div class="pad glass">
+      <b id="cTitle">课程进度</b>
+      <div class="bar"><i id="cBar" style="width:0"></i></div>
+      <div style="color:var(--dim);font-size:13px" id="cNext"></div>
+      <div class="q" id="cReview"></div>
+    </div>
+    <div class="pad glass"><b>最近的课</b><div class="lessons" id="cList" style="margin-top:8px"></div></div>
+  </div>
+
+  <h2>安全：能动手，但先问主人</h2>
+  <div class="tiers">
+    <div class="tier glass"><b style="color:var(--green)">安全</b><p>只读查看、查状态、扫局域网：直接做。</p></div>
+    <div class="tier glass"><b style="color:var(--cyan)">询问</b><p>改东西、SSH 到别的设备：先问，可以「只这一次」或「以后都行」。</p></div>
+    <div class="tier glass"><b style="color:var(--amber)">危险</b><p>可能损坏系统：先打快照，再严格确认。</p></div>
+    <div class="tier glass"><b style="color:#ff7ab2">禁止</b><p>密钥不进仓库、不朗读密码、不碰门锁。</p></div>
+  </div>
+
+  <h2>用到的东西</h2>
+  <div class="stack">
+    <span>youyeetoo R1 · RK3588 + RK1828</span><span>Qwen3.5-4B（W4A16 GRQ 量化）</span><span>Qwen3-TTS</span><span>rknn3-toolkit 1.1.0</span>
+    <span>DeepSeek 老师</span><span>LoRA / PEFT · NVIDIA A100</span><span>SQLite FTS 记忆库</span><span>MCP · SKILL.md</span><span>systemd 定时器 · 自愈</span>
+  </div>
+
+  <footer id="foot">本页数据实时来自板子 · <a href="/" style="color:var(--cyan)">打开控制台</a></footer>
+</div>
+<script>
+const $ = (id) => document.getElementById(id);
+// The static (GitHub Pages) copy carries a sanitized snapshot instead of talking to the board.
+const SNAP = window.SNAPSHOT || null;
+const get = (p) => SNAP ? (SNAP[p.split("?")[0]] ? Promise.resolve(SNAP[p.split("?")[0]]) : Promise.reject("no data"))
+  : fetch(p).then((r) => r.ok ? r.json() : Promise.reject(r.statusText));
+const esc = (s) => String(s ?? "").replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+function dur(s) { const d = Math.floor(s / 86400), h = Math.floor(s % 86400 / 3600); return d ? `${d}天${h}时` : `${h}时${Math.floor(s % 3600 / 60)}分`; }
+async function load() {
+  const [mem, sys, sc, pg] = await Promise.allSettled([get("/api/memory?limit=1"), get("/api/system"), get("/api/school"), get("/api/progress")]);
+  if (mem.status === "fulfilled") { const s = mem.value.stats; $("sKnow").textContent = s.knowledge; $("sLesson").textContent = s.lessons; $("sSkill").textContent = s.skills; }
+  if (sys.status === "fulfilled") {
+    const v = sys.value, up = v.services.filter((x) => x.state === "active").length;
+    $("sUp").textContent = dur(v.uptime_s);
+    $("liveTxt").textContent = (SNAP ? `数据快照 ${SNAP.taken} · ` : "在线 · ") + `${up}/${v.services.length} 个服务运行中 · CPU ${Math.round(v.cpu_percent)}% · ${v.temp_c}°C`;
+  }
+  if (sc.status === "fulfilled") {
+    const d = sc.value, total = d.syllabus.length || 1, idx = Math.min(d.index, total);
+    $("sClass").textContent = d.sessions; $("sMaster").textContent = d.mastered;
+    $("cTitle").textContent = `课程进度：${idx} / ${total} 门已过关`; $("cBar").style.width = (100 * idx / total) + "%";
+    $("cNext").textContent = "下一课：" + (d.syllabus[idx % total] || "");
+    if (d.review && d.review.who_am_i) $("cReview").innerHTML = `<b>今天的自省</b><br>我是谁：${esc(d.review.who_am_i)}<br>要干什么：${esc(d.review.purpose)}<br>` +
+      (d.review.gaps || []).slice(0, 3).map((g) => "缺：" + esc(g.gap)).join("<br>");
+    $("cList").innerHTML = d.history.slice(0, 14).map((h) => `<div><span>${esc((h.kind === "gap" ? "补短板·" : "") + h.topic)}</span><span class="tag ${h.mastered ? "done" : "ask"}">${h.passed}/${h.total}</span></div>`).join("");
+  }
+  if (pg.status === "fulfilled") {
+    const L = pg.value.lora || {}, steps = L.steps || [], v = (L.versions || [])[0];
+    const done = steps.filter((x) => x.state === "done").length;
+    $("pBar").style.width = (steps.length ? 100 * done / steps.length : 0) + "%"; $("pStage").textContent = L.stage || "";
+    const label = { done: "完成", running: "进行中", wait: "等待", ask: "等主人确认", failed: "失败" };
+    $("pSteps").innerHTML = steps.map((x) => `<li><span>${esc(x.name)}</span><span class="tag ${x.state}">${label[x.state] || x.state}</span></li>`).join("");
+    if (v) {
+      if (v.loss_before) { $("lBefore").textContent = v.loss_before; $("lAfter").textContent = v.loss_after; }
+      if (v.samples) $("lSamples").textContent = v.samples;
+      const c = (v.compare || []).find((x) => /pet|re\./.test(x.user)) || (v.compare || [])[0];
+      if (c) $("cmpBox").innerHTML = `<div class="q">考题：${esc(c.user)}</div><div class="cmp"><div class="bad"><i>微调前（电脑上测，会先长篇思考）</i>${esc(c.before.slice(0, 110))}…</div><div class="good"><i>微调后</i>${esc(c.after)}</div></div>`;
+    }
+  }
+}
+load(); if (!SNAP) setInterval(load, 30000);
+</script>
+</body>
+</html>

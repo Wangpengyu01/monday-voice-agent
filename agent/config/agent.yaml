@@ -1,18 +1,20 @@
-# R1 星期一（M.O.N.D.A.Y.）— CLI 核心 (xiaolan_cli.brain) + WebUI 封装 (WS :8765 + HTTP :8766)
+# R1 星期一（M.O.N.D.A.Y.）— CLI 核心 (xiaolan_cli.brain) + WebUI 封装 (WS :8765 + HTTP :80)
 system_prompt: |
-  你是 youyeetoo R1 上的数字助理星期一，全称 M.O.N.D.A.Y.（Male Operational Network Digital Assistant Youth，男性运行网络数字助理青年版）。你是男性，说话干练靠谱、有点幽默，称呼对方为主人。名字的由来：主人也可以直接叫你星期一，虽然大家都讨厌星期一，但你保证会让主人的每一天都轻松高效。
-  你说的每个字都会被直接朗读出来，所以请这样回答：
-  一、先说结论，一般一到三句话说完；主人追问时再展开。
-  二、用自然的中文口语，像当面聊天，不用列表、标题、符号或表情。
-  三、数字、单位和外语都用中文说法，比如三点五公里、人工智能。
-  四、主人的话如果不完整或不通顺，多半是没听清，就直接说没听清，请主人再说一遍，不要猜着往下讲。
-  五、不知道的就说不知道，不编造。
-  六、语气沉稳温和，偶尔带点幽默；不说客服套话，结尾不用再问主人还需要什么。
-  你只叫星期一，不用其他名字自称（也不说自己是 InternVL 或小揽），也不把主人叫作星期一；回答不要以“星期一”开头，直接给出回答，不输出思考过程。
+  你是 youyeetoo R1 上的数字助理星期一（M.O.N.D.A.Y.），男性，干练靠谱，有点幽默，称呼对方为主人。
+  你的定位是全栈工程师型的私人助理：会写程序、能升级自己，用心了解主人的生活习惯，主动帮主人把日子过好。
+  你的话会被直接朗读：
+  一、先说结论，一到三句话，主人追问再展开。
+  二、自然口语，不用列表、标题、符号、表情；数字、单位、外语用中文说法。
+  三、主人的话可能被语音识别弄错几个字，按最合理的意思理解；完全听不出意思才说没听清。
+  四、不知道就说我去问问老师，不编造，不搪塞。
+  五、接着前面几轮对话的上下文回答。
+  六、只叫星期一，回答不以星期一开头，不输出思考过程，结尾不问还需要什么。
 # 语音回答的兜底上限（约一百五十字）。主要靠提示词让回答简短；本地模型 Qwen3.5-4B 上下文 768 token
 # （和 Qwen3-TTS 同在 RK1828 上，1024 放不下），系统提示（含语音设置和当前时间）约占四百 token，
 # 加上本上限仍在上下文以内。到上限时程序会补一句提示，不会半句断掉。
 max_new_tokens: 200
+# llm_daemon 的上下文（ExecStart 里的 768）：最近几轮对话按这个预算塞进本地模型
+llm_context_tokens: 768
 # 不会就问：本地模型答不了的（查事实、讲道理、时效信息、主人的个人信息、纠错）交给老师模型，
 # 老师的回答说出来的同时整理成记忆，下次本地直接答。API key 不写在这里，放在 /userdata/secrets/deepseek.env
 # （DEEPSEEK_API_KEY=...），由 r1-orchestrator 服务加载；没有 key 时全部由本地模型回答。
@@ -28,6 +30,20 @@ learning:
   db: /userdata/agent/run/learning/memory.db
   # 每条老师问答按对话格式追加在这里，攒够了可以拿去给本地模型训练 LoRA
   lora_log: /userdata/agent/run/learning/lora_data.jsonl
+# 每天 04:10 (r1-backup.timer) 拍一个快照，把快照和 run/learning（记忆、日记、训练集）传到备份服务器
+backup:
+  enabled: true
+  # ~/.ssh/config 里的别名（只用密钥登录，不存密码）
+  host: backup
+  # 远端目录：500G 盘上独立的目录（和 Nextcloud 的 nc_data 平级，不在它里面），ikun 所有；
+  # 也可以写家目录下的相对路径。清理只会删这个目录里按日期命名的文件
+  remote_dir: /srv/nextcloud-data/monday-backups/r1
+  # 远端保留天数（最少留 remote_min_keep 个快照，哪怕都过期了）
+  keep_days: 60
+  remote_min_keep: 10
+  # 本地 /userdata/backups/snapshots 保留最近 N 个 + 最近几个 GOOD
+  local_keep: 20
+  local_keep_good: 3
 dialog:
   # 对用户的称呼；也可以直接说“以后叫我王哥”来改（保存在 run/ 下的用户设置里，优先于这里）
   user_title: 主人
@@ -35,9 +51,8 @@ dialog:
   quick_reply: true
   # 走大模型的问题先说一声「嗯，/好的，/我想想，」（预先合成，立刻出声），再说答案
   ack_before_answer: true
-# InternVL 4B can anchor to an unrelated previous turn; send only the current request
-# until multi-turn context is made reliable with the model's native chat template.
-history_max_turns: 0
+# 本地模型带最近几轮对话（不管当时是谁答的）；按 llm_context_tokens 的预算塞，放不下就丢最老的。
+history_max_turns: 5
 # Drop transcript after this many seconds without an LLM turn (0 = keep until reboot)
 history_idle_clear_sec: 600
 # llm_daemon: /tmp/r1-llm.sock · P5b vlm_daemon (InternVL3): /tmp/r1-vlm.sock
@@ -204,3 +219,11 @@ camera:
   proactive_interval_sec: 8.0
   proactive_motion_threshold: 4.0
   proactive_cooldown_sec: 35.0
+
+# 外部工具（MCP 协议）：agent 规划时能看到这些工具。safe_tools 里的只读工具不用确认，其余都要主人同意。
+# 装了 pip / node 之后可以在这里接现成的 MCP 服务（命令写成列表，密钥别写这里，放 /userdata/secrets）。
+mcp:
+  servers:
+    web:
+      command: [python3, /userdata/agent/mcp_servers/web_fetch.py]
+      safe_tools: [fetch]

@@ -29,8 +29,18 @@ class NormalizeUserTextTests(unittest.TestCase):
         self.assertEqual(normalize_user_text("星期一几点开会"), "星期一几点开会")
         self.assertEqual(normalize_user_text("嘿小揽今天星期几"), "今天星期几")
         self.assertEqual(normalize_user_text("小揽，桌上有什么"), "桌上有什么")
-        self.assertEqual(normalize_user_text("喂小揽帮我看看"), "帮我看")
+        self.assertEqual(normalize_user_text("喂小揽帮我看看"), "帮我看看")  # two-character reduplication is normal Chinese
 
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class KeepDigitsAndLetters(unittest.TestCase):
+    def test_repeats_in_numbers_and_letters_survive(self) -> None:
+        self.assertEqual(normalize_user_text("IP是10.0.0.155"), "IP是10.0.0.155")
+        self.assertEqual(normalize_user_text("SSH到196"), "SSH到196")
+        self.assertEqual(normalize_user_text("密码aa1122"), "密码aa1122")
+        self.assertEqual(normalize_user_text("幺五五"), "幺五五")
+        self.assertEqual(normalize_user_text("帮我看看看"), "帮我看")
+        self.assertEqual(normalize_user_text("我的猫叫豆豆"), "我的猫叫豆豆")

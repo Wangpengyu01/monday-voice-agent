@@ -1,0 +1,12 @@
+[Unit]
+Description=Resume the distillation at the start of each DeepSeek off-peak window (it stops by itself when done)
+
+[Timer]
+# one line per time: "00:30,12:05,18:05" in a single line is not valid systemd and left the timer dead
+OnCalendar=*-*-* 00:30:00
+OnCalendar=*-*-* 12:05:00
+OnCalendar=*-*-* 18:05:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

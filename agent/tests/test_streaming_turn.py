@@ -14,6 +14,7 @@ if str(AGENT_ROOT) not in sys.path:
 
 from orchestrator.main import Orchestrator  # noqa: E402
 from orchestrator.persona import INTRODUCTION  # noqa: E402
+from orchestrator.quick_reply import ACK_GROUPS  # noqa: E402
 from orchestrator.events import AgentState  # noqa: E402
 from llm.client import LlmUnavailableError  # noqa: E402
 
@@ -388,7 +389,8 @@ class StreamingTurnTests(unittest.IsolatedAsyncioTestCase):
     async def test_ack_is_spoken_first_and_models_own_ack_is_dropped(self) -> None:
         orch = self._llm_turn_shell(12)
         orch.ack_enabled = True
-        orch._ack_cache = {"好的，": Path("/cache/ack_ok.wav")}
+        ack = ACK_GROUPS["request"][0]
+        orch._ack_cache = {ack: Path("/cache/ack_ok.wav")}
 
         def fake_stream(prompt: str, on_token, **kwargs):
             for piece in ("好的，主人。", "我推荐肖申克的救赎，", "情节紧凑又温暖。"):
@@ -399,7 +401,7 @@ class StreamingTurnTests(unittest.IsolatedAsyncioTestCase):
             await orch._run_llm("推荐一部适合周末看的电影", generation=12, vad_end_at=time.monotonic())
 
         texts = [t for t, _ in orch.tts_queue.enqueued]
-        self.assertEqual(texts[0], "[clip]好的，")
+        self.assertEqual(texts[0], f"[clip]{ack}")
         self.assertNotIn("好的", "".join(texts[1:]))
         self.assertIn("肖申克", "".join(texts[1:]))
         self.assertFalse(orch._speaking)
