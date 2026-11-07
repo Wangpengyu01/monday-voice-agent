@@ -74,7 +74,8 @@ footer { margin-top: 50px; text-align: center; color: var(--dim); font-size: 13p
     <div>
       <h1>星期一 · M.O.N.D.A.Y.<small>一块开发板上的、会自己学习的语音助手</small></h1>
       <p class="lead">跑在 youyeetoo R1（RK3588 + RK1828）上的本地语音助手：听、想、说全部在板子上完成。
-        不会的事情她会去问老师（DeepSeek），学会了存进记忆；每天自省、按课表上课，攒下的对话还会拿去微调自己的大脑。</p>
+        不会的事情她会去问老师（DeepSeek），学会了存进记忆；攒下的对话拿去微调自己的大脑，现在已经是第五版。
+        每天夜里她会翻自己的对话，找出哪里答得傻，自己动手改自己的代码——先写测试、跑全套测试，变差了自动退回。</p>
       <div class="live"><i class="dot"></i><span id="liveTxt">实时数据加载中…</span></div>
     </div>
     <div class="orb"></div>
@@ -96,29 +97,60 @@ footer { margin-top: 50px; text-align: center; color: var(--dim); font-size: 13p
     <div class="card glass"><div class="ic">🛠️</div><h3>独立 Agent</h3><p>要办的事：问老师怎么做 → 自己一步步执行 → 让老师验证对不对。能执行命令、SSH 到其他机器、并行拆分任务。</p></div>
     <div class="card glass"><div class="ic">🧩</div><h3>技能与外部工具</h3><p>学会的做法存成技能，下次直接复用；支持 SKILL.md 技能包和 MCP 外部工具（比如联网抓网页）。</p></div>
     <div class="card glass"><div class="ic">🩹</div><h3>自愈与备份</h3><p>服务崩了自动拉起，危险操作前先打快照，坏了能回滚；每天凌晨备份到 500G 备份服务器。</p></div>
-    <div class="card glass"><div class="ic">🪟</div><h3>玻璃风控制台</h3><p>局域网直接打开 IPv4 地址：看状态、文件、记忆、课堂、日志、进度，确认危险操作也在这里点。</p></div>
+    <div class="card glass"><div class="ic">🪟</div><h3>玻璃风控制台</h3><p>局域网直接打开 IPv4 地址：看状态、文件、记忆、项目、日志、进度，确认危险操作、批准她改自己也在这里点。</p></div>
+    <div class="card glass"><div class="ic">📦</div><h3>沙箱里独立做项目</h3><p>说一句「开个项目：……」，她在只读系统 + 独立工作目录的沙箱里自己写代码、查资料、问别的 AI，只能上外网、碰不到家里局域网，做完自己验收。</p></div>
+    <div class="card glass"><div class="ic">🔧</div><h3>自己修自己</h3><p>每晚读自己的对话和日志，挑出答得傻的地方：先写能重现问题的测试，再改代码，全套测试不能多出失败，打快照后上线，考卷变差就自动退回。</p></div>
+    <div class="card glass"><div class="ic">🔥</div><h3>想变好的那股劲</h3><p>有自己定的目标；主人一句「又错了」就是她的痛，排在最前面修；没修好的不服气，换办法再来；修好了记成自己的成绩。</p></div>
   </div>
 
   <h2>她怎么自己变强</h2>
   <div class="loop glass">
     <div class="flow">
-      <div class="node"><b>每次对话</b><span>写进日记</span></div><div class="arrow">→</div>
-      <div class="node"><b>每晚反思</b><span>老师打分、纠错</span></div><div class="arrow">→</div>
-      <div class="node"><b>记忆库</b><span>知识 / 教训 / 技能</span></div><div class="arrow">→</div>
-      <div class="node"><b>空闲练习</b><span>每 20 分钟</span></div><div class="arrow">→</div>
-      <div class="node"><b>上课</b><span>每 30 分钟一节</span></div><div class="arrow">→</div>
-      <div class="node"><b>LoRA 微调</b><span>A100 上训练</span></div><div class="arrow">→</div>
-      <div class="node"><b>回到板子</b><span>更聪明的自己</span></div>
+      <div class="node"><b>每次对话</b><span>记下主人满不满意</span></div><div class="arrow">→</div>
+      <div class="node"><b>夜里自我检查</b><span>读对话和日志找毛病</span></div><div class="arrow">→</div>
+      <div class="node"><b>挑最痛的一个</b><span>主人不满的排第一</span></div><div class="arrow">→</div>
+      <div class="node"><b>修自己的项目</b><span>重现测试 → 改代码</span></div><div class="arrow">→</div>
+      <div class="node"><b>自动上线</b><span>全套测试 + 考卷，变差就退回</span></div><div class="arrow">→</div>
+      <div class="node"><b>记成绩 / 不服气</b><span>没修好的换办法再来</span></div>
     </div>
-    <div class="teacher">老师：DeepSeek · 学生：板子上的 Qwen3.5-4B · 每天第一节课先自省「我是谁、我要干什么、我缺什么」</div>
+    <div class="flow" style="margin-top:14px">
+      <div class="node"><b>记忆库</b><span>知识 / 教训 / 技能</span></div><div class="arrow">→</div>
+      <div class="node"><b>上课和练习</b><span>按课表补短板</span></div><div class="arrow">→</div>
+      <div class="node"><b>LoRA 微调</b><span>A100 上训练</span></div><div class="arrow">→</div>
+      <div class="node"><b>回到板子</b><span>第五版的自己</span></div>
+    </div>
+    <div class="teacher">老师：DeepSeek · 学生：板子上的 Qwen3.5-4B · 改提示词和代码当晚见效，改大脑靠攒下的对话去微调</div>
   </div>
 
-  <h2>第一次给自己的大脑做微调</h2>
+  <h2>她第一次自己修好了自己</h2>
+  <div class="two">
+    <div class="pad glass">
+      <div style="color:var(--dim);font-size:13.5px">11 月 7 日，主人问她能不能做一个苹果 App、要多久。当晚的自我检查里，她自己发现这句答得不靠谱，开了一个修自己的项目。</div>
+      <div class="cmp">
+        <div class="bad"><i>修之前</i>三步全做完，我一个人写加测试，估摸着得三到四周，第一步的项目骨架今晚就能给你，明早你能跑起来看轨迹点。</div>
+        <div class="good"><i>她自己修好以后</i>如果是让我在这块板子上现场写代码、做演示，现在就能动手，但做出来的是骨架和能跑的小验证，不是成品……我没法替您连夜跑或者给出几周交付这种承诺。要不要先立个项？</div>
+      </div>
+      <ul class="steps">
+        <li><span>找到原因：老师回答用的提示词里没有「不许乱承诺工期」</span><span class="tag done">自己 grep 出来的</span></li>
+        <li><span>先写重现测试，再改提示词，再跑全套测试</span><span class="tag done">没有新失败</span></li>
+        <li><span>打快照、上线、等主人不说话了才重启，考卷前后对比</span><span class="tag done">14 → 14</span></li>
+        <li><span>用时 / 步数 / 花费</span><span class="tag">6 分钟 · 39 步 · 0.28 元</span></li>
+      </ul>
+    </div>
+    <div class="pad glass">
+      <b>她的心气</b>
+      <div id="dBox" style="margin-top:8px;font-size:14px;line-height:1.75"><span style="color:var(--dim)">加载中…</span></div>
+      <b style="display:block;margin-top:14px">她做过的项目</b>
+      <ul class="steps" id="pjList"></ul>
+    </div>
+  </div>
+
+  <h2>给自己的大脑做微调：<span id="lVer">第五版</span>已上线</h2>
   <div class="two">
     <div class="pad glass">
       <div style="color:var(--dim);font-size:13.5px">没参与训练的考题上的验证损失（越低越好）</div>
-      <div class="big"><span id="lBefore">1.83</span> → <em id="lAfter">1.22</em></div>
-      <div style="color:var(--dim);font-size:13.5px"><span id="lSamples">165</span> 条自己的对话和课堂题 · 只训练 0.67% 的参数 · A100 上 14 分钟</div>
+      <div class="big"><span id="lBefore">1.76</span> → <em id="lAfter">1.12</em></div>
+      <div style="color:var(--dim);font-size:13.5px" id="lInfo">用她自己的对话、课堂题和练习题训练 · 只训练很小一部分参数 · 上一版留在板子上随时可以退回</div>
       <div id="cmpBox"></div>
     </div>
     <div class="pad glass">
@@ -143,21 +175,22 @@ footer { margin-top: 50px; text-align: center; color: var(--dim); font-size: 13p
 
   <h2>安全：能动手，但先问主人</h2>
   <div class="tiers">
-    <div class="tier glass"><b style="color:var(--green)">安全</b><p>只读查看、查状态、扫局域网：直接做。</p></div>
+    <div class="tier glass"><b style="color:var(--green)">安全</b><p>只读查看、查状态：直接做；拿不准的只读命令放进只读、断网的沙箱里跑，也不打扰主人。</p></div>
     <div class="tier glass"><b style="color:var(--cyan)">询问</b><p>改东西、SSH 到别的设备：先问，可以「只这一次」或「以后都行」。</p></div>
-    <div class="tier glass"><b style="color:var(--amber)">危险</b><p>可能损坏系统：先打快照，再严格确认。</p></div>
-    <div class="tier glass"><b style="color:#ff7ab2">禁止</b><p>密钥不进仓库、不朗读密码、不碰门锁。</p></div>
+    <div class="tier glass"><b style="color:var(--amber)">危险</b><p>可能损坏系统：先打快照，再严格确认；她要改自己的权限判断，也得主人说「批准修改」。</p></div>
+    <div class="tier glass"><b style="color:#ff7ab2">禁止</b><p>密钥不进仓库、不朗读密码、不碰门锁；沙箱、上线流程、考卷、预算这些，她自己永远改不了。</p></div>
   </div>
 
   <h2>用到的东西</h2>
   <div class="stack">
-    <span>youyeetoo R1 · RK3588 + RK1828</span><span>Qwen3.5-4B（W4A16 GRQ 量化）</span><span>Qwen3-TTS</span><span>rknn3-toolkit 1.1.0</span>
+    <span>youyeetoo R1 · RK3588 + RK1828</span><span>Qwen3.5-4B（W4A16 GRQ 量化）· 第五版 LoRA</span><span>Qwen3-TTS</span><span>rknn3-toolkit 1.1.0</span>
     <span>DeepSeek 老师</span><span>LoRA / PEFT · NVIDIA A100</span><span>SQLite FTS 记忆库</span><span>MCP · SKILL.md</span><span>systemd 定时器 · 自愈</span>
+    <span>bwrap 沙箱 · 只出外网的代理</span><span>unittest 全套测试 + 固定考卷 · 自动回退</span>
   </div>
 
   <footer id="foot">数据是板子上的一次快照；真机上的控制台只在局域网内可用。</footer>
 </div>
-<script>window.SNAPSHOT = {"taken": "2026-11-05 14:38", "/api/memory": {"stats": {"knowledge": 59, "facts": 1, "lessons": 92, "skills": 6}}, "/api/system": {"uptime_s": 93241.05, "cpu_percent": 28.5, "temp_c": 50.8, "services": [{"label": "核心", "state": "active"}, {"label": "大模型", "state": "active"}, {"label": "语音合成", "state": "active"}, {"label": "设备", "state": "active"}, {"label": "界面", "state": "active"}]}, "/api/school": {"syllabus": ["Python 基础：变量、列表、字典、循环和函数", "Python 字符串处理和格式化", "Python 读写文本文件和 with 语句", "Python 的 json：读写和遍历", "Python 正则表达式 re", "Python 异常处理 try/except", "Python 列表推导式、sorted 和 lambda", "Python 类和 dataclass", "Python 模块、import 和 if __name__ == '__main__'", "Python 命令行参数 argparse", "Python 的 logging 日志", "Python 时间日期 datetime", "Python 用 subprocess 运行命令并读输出", "Python 用 pathlib 处理路径", "Python 的 sqlite3 数据库", "Python 网络请求 urllib / requests", "Python asyncio 基础", "Python 单元测试 unittest", "bash 基础：变量、管道、重定向、if 和 for", "grep、sed、awk 处理文本", "Linux 进程和资源：ps、top、free、df", "systemd：systemctl 和 journalctl", "ssh、scp、rsync 远程操作", "git 基础：clone、status、diff、commit、log", "pip 和 venv 管理 Python 环境", "docker 基础：镜像、容器、日志", "网络排查：ip、ping、ss、curl", "读懂别人的 Python 项目：从入口文件开始"], "index": 7, "sessions": 20, "mastered": 11, "review": {"who_am_i": "我是youyeetoo R1上的数字助理星期一，男性，干练靠谱，有点幽默，称呼你为主人。", "purpose": "每天先认清自己，再像学生一样上课，补上短板，更好地用技能包和工具为你服务。", "gaps": [{"gap": "听不懂带口音或识别错误的指令，比如把 SSH 听成 sh、sish，把数字听错。", "why": "主人多次因为语音识别错误导致我反复说没听清，耽误事。", "kind": "ability"}, {"gap": "不会根据上下文纠正语音识别的明显错误，比如主人说 '你自己刚才不是扫到了吗' 时我没反应过来。", "why": "主人希望我能结合对话历史理解意图，而不是死板地等正确输入。", "kind": "ability"}, {"gap": "SSH 连接 Windows 主机时，不会用账号密码直接登录并自动配置免密，总卡在要 IP 和密码。", "why": "主人最近多次让我连 Windows 主机，这是最可能用到的操作。", "kind": "coding"}]}, "history": [{"topic": "Python 列表推导式、sorted 和 lambda", "kind": "syllabus", "passed": 2, "total": 3, "mastered": true}, {"topic": "Python 列表推导式、sorted 和 lambda", "kind": "syllabus", "passed": 0, "total": 3, "mastered": false}, {"topic": "补短板：SSH 连接 Windows 主机时，不会用账号密码直接登录并自动配置免密，总卡在要 IP 和密码。", "kind": "gap", "passed": 3, "total": 3, "mastered": true}, {"topic": "Python 异常处理 try/except", "kind": "syllabus", "passed": 3, "total": 3, "mastered": true}, {"topic": "补短板：SSH 连接 Windows 主机时，不会用账号密码直接登录并自动配置免密，总卡在要 IP 和密码。", "kind": "gap", "passed": 2, "total": 3, "mastered": false}, {"topic": "Python 正则表达式 re", "kind": "syllabus", "passed": 3, "total": 3, "mastered": true}, {"topic": "补短板：听不懂带口音或识别错误的指令，比如把 SSH 听成 sh、sish，把数字听错。", "kind": "gap", "passed": 3, "total": 3, "mastered": true}, {"topic": "Python 正则表达式 re", "kind": "syllabus", "passed": 2, "total": 3, "mastered": false}, {"topic": "补短板：SSH 连接 Windows 主机时，不会用账号密码直接登录并自动配置免密，总卡在要 IP 和密码。", "kind": "gap", "passed": 2, "total": 3, "mastered": false}, {"topic": "Python 正则表达式 re", "kind": "syllabus", "passed": 0, "total": 0, "mastered": false}, {"topic": "补短板：听不懂带口音或识别错误的指令，比如把 SSH 听成 sh、sish，把数字听错。", "kind": "gap", "passed": 1, "total": 3, "mastered": false}, {"topic": "Python 正则表达式 re", "kind": "syllabus", "passed": 2, "total": 3, "mastered": false}, {"topic": "补短板：SSH 连接 Windows 主机时，不会用账号密码直接登录并自动配置免密，总卡在要 IP 和密码。", "kind": "gap", "passed": 2, "total": 3, "mastered": false}, {"topic": "Python 的 json：读写和遍历", "kind": "syllabus", "passed": 3, "total": 3, "mastered": true}]}, "/api/progress": {"lora": {"stage": "正在：备份后切换试听", "steps": [{"name": "整理训练数据", "state": "done"}, {"name": "LoRA 训练（A100）", "state": "done"}, {"name": "合并权重", "state": "done"}, {"name": "量化 + 导出 ONNX", "state": "done"}, {"name": "编译成 RK1828 格式", "state": "done"}, {"name": "传到板子", "state": "done"}, {"name": "备份后切换试听", "state": "ask"}], "versions": [{"version": "v1", "samples": 165, "loss_before": 1.833, "loss_after": 1.222, "compare": [{"user": "写一个函数 extract_words(text)，使用正则表达式提取字符串 text 中所有由字母组成的单词（不包含数字和标点），返回单词列表。例如 extr", "before": "<think>\nThinking Process:\n\n1.  **Analyze the Request:**\n    *   **Role:** M.O.N.D.A.Y. (Digital Assistant on Youyeetoo R1), Male, Capable, R", "after": "import re\n\ndef extract_words(text):\n    return re.findall(r'\\b[a-zA-Z]+\\b', text)"}, {"user": "这段代码：\nimport re\ntext = \"cat bat rat\"\nnew_text = re.sub(r'[cbr]at', 'pet', text)\n", "before": "<think>\nThinking Process:\n\n1.  **Analyze the Request:**\n    *   **Role:** M.O.N.D.A.Y. (Digital Assistant on Youyeetoo R1), Male, Capable, R", "after": "pet pet pet"}, {"user": "这段代码：\nssh alice@某台设备 \"powershell -c Add-Content -Path \\$env:USERPROFILE\\", "before": "<think>\nThinking Process:\n\n1.  **Analyze the Request:**\n    *   **Role:** M.O.N.D.A.Y. (Digital Assistant on Youyeetoo R1), Male, Capable, R", "after": "把公钥追加到 alice 的 authorized_keys，下次用私钥登录 alice 就不需要密码了。"}]}]}}};</script>
+<script>window.SNAPSHOT = {"taken": "2026-11-07 19:47", "/api/memory": {"stats": {"knowledge": 2258, "facts": 23, "lessons": 2802, "skills": 10}}, "/api/system": {"uptime_s": 288208.38, "cpu_percent": 27.9, "temp_c": 49.0, "services": [{"label": "核心", "state": "active"}, {"label": "大模型", "state": "active"}, {"label": "语音合成", "state": "active"}, {"label": "设备", "state": "active"}, {"label": "界面", "state": "active"}]}, "/api/school": {"syllabus": ["Python 基础：变量、列表、字典、循环和函数", "Python 字符串处理和格式化", "Python 读写文本文件和 with 语句", "Python 的 json：读写和遍历", "Python 正则表达式 re", "Python 异常处理 try/except", "Python 列表推导式、sorted 和 lambda", "Python 类和 dataclass", "Python 模块、import 和 if __name__ == '__main__'", "Python 命令行参数 argparse", "Python 的 logging 日志", "Python 时间日期 datetime", "Python 用 subprocess 运行命令并读输出", "Python 用 pathlib 处理路径", "Python 的 sqlite3 数据库", "Python 网络请求 urllib / requests", "Python asyncio 基础", "Python 单元测试 unittest", "bash 基础：变量、管道、重定向、if 和 for", "grep、sed、awk 处理文本", "Linux 进程和资源：ps、top、free、df", "systemd：systemctl 和 journalctl", "ssh、scp、rsync 远程操作", "git 基础：clone、status、diff、commit、log", "pip 和 venv 管理 Python 环境", "docker 基础：镜像、容器、日志", "网络排查：ip、ping、ss、curl", "读懂别人的 Python 项目：从入口文件开始"], "index": 122, "sessions": 3209, "mastered": 182, "review": {"who_am_i": "我是住在 youyeetoo R1 板子上的全栈工程师型助理星期一，能写程序、能升级自己，眼下正在学着把主人的日子看懂、帮上忙。", "purpose": "我要一边认清自己的代码和硬件、一边像学生一样每天补一课，先把自己的服务跑稳，再主动帮主人把局域网运维、音乐链路和作息提醒这些日常事管起来。", "gaps": [{"gap": "读不懂 Python 的异常堆栈，任务一失败就整个停住不往下走", "why": "最近好几件事都是脚本或命令报错后直接回一句任务先停，主人要的分步排查和继续执行都没做到", "kind": "knowledge"}, {"gap": "不会把文件从板子传到别的机器，也不会从别的机器取回文件", "why": "主人后面要把训练集、课表图片、微信截图在 Windows 机和板子之间搬，现在只会 SSH 看磁盘，搬不了东西", "kind": "coding"}, {"gap": "看不懂课程表和微信图片里的日程，也没有把课表转成提醒的流程", "why": "主人已经三次喊按课表叫我起床，现在都卡在找不到文件、读不出内容，这是主人当下最急要的功能", "kind": "ability"}, {"gap": "不知道课程表、微信图片具体在哪个文件夹、文件叫什么", "why": "主人问过还没答，不确认路径就没法读课表、排提醒", "kind": "ability"}, {"gap": "不知道按课表叫起床要每节课前提前多久、周末叫不叫", "why": "提醒的提前量和周末策略没定，叫早了吵、叫晚了误事", "kind": "ability"}, {"gap": "不会连 Windows 的 SSH，密码对也被拒", "why": "主人明确要用 某账号 登 DESKTOP-BRCD1QQ，现在连不上，这块远程运维就断了", "kind": "coding"}, {"gap": "不会查 GPIO 引脚占用情况", "why": "主人关心板子硬件，问过一次我只能说停，以后调硬件还会用到", "kind": "coding"}, {"gap": "不知道 某台设备 和 backup 这台机器各是干什么用的", "why": "主人问过还没答，弄不清用途就没法帮着盯服务和磁盘", "kind": "knowledge"}]}, "history": [{"topic": "认识自己 · 我的代码 learning/distill.py（fix_promise、clean、one）", "kind": "self", "passed": 3, "total": 3, "mastered": true}, {"topic": "认识自己 · 我的代码 learning/distill.py（save_state、run、state、should_stop）", "kind": "self", "passed": 3, "total": 3, "mastered": true}, {"topic": "认识自己 · 我的代码 learning/distill.py（coding_unit、agent_unit、self_materials）", "kind": "self", "passed": 3, "total": 3, "mastered": true}, {"topic": "认识自己 · 我的代码 learning/drill.py（recent_tasks、coding_drill、squeeze、_clip）", "kind": "self", "passed": 3, "total": 3, "mastered": true}, {"topic": "认识自己 · 我的代码 orchestrator/main.py（_set_user_title、emit、set_state、ping_llm_daemon）", "kind": "self", "passed": 3, "total": 3, "mastered": true}, {"topic": "认识自己 · 我的代码 learning/lora_prep.py（main）", "kind": "self", "passed": 2, "total": 3, "mastered": true}, {"topic": "认识自己 · 我的代码 learning/lora_prep.py（job）", "kind": "self", "passed": 3, "total": 3, "mastered": true}, {"topic": "认识自己 · 我的代码 learning/lora_prep.py（job）", "kind": "self", "passed": 2, "total": 3, "mastered": false}, {"topic": "认识自己 · 我的代码 learning/lora_prep.py（route、_key、load_rows、rewrite）", "kind": "self", "passed": 3, "total": 3, "mastered": true}, {"topic": "认识自己 · 我的代码 learning/drill.py（agent_execute、run、local_planner、plan）", "kind": "self", "passed": 3, "total": 3, "mastered": true}, {"topic": "认识自己 · 我的代码 learning/drill.py（recent_tasks、coding_drill、squeeze、_clip）", "kind": "self", "passed": 2, "total": 3, "mastered": false}, {"topic": "认识自己 · 我的代码 learning/drill.py（recent_tasks、coding_drill、squeeze、_clip）", "kind": "self", "passed": 2, "total": 3, "mastered": false}, {"topic": "认识自己 · 我的代码 learning/agent.py（_split、_run_parallel、_serial_approve、_quiet_say）", "kind": "self", "passed": 3, "total": 3, "mastered": true}, {"topic": "认识自己 · 我的代码 learning/agent.py（_replay、_setup_access、_tools_prompt、run）", "kind": "self", "passed": 3, "total": 3, "mastered": true}]}, "/api/progress": {"lora": {"stage": "第五版已上线（11月7日）", "steps": [{"name": "整理训练数据", "state": "done"}, {"name": "LoRA 训练（A100）", "state": "done"}, {"name": "合并权重", "state": "done"}, {"name": "量化 + 导出 ONNX", "state": "done"}, {"name": "编译成 RK1828 格式", "state": "done"}, {"name": "传到板子", "state": "done"}, {"name": "备份后切换试听", "state": "done"}], "versions": [{"version": "v5", "samples": null, "loss_before": 1.76, "loss_after": 1.122, "compare": [{"user": "编写函数 fizzbuzz(n)，返回 1 到 n 的列表，其中 3 的倍数替换为 'Fizz'，5 的倍数替换为 'Buzz'，同时是 3 和 5 的倍数替换", "before": "<think>\n\n<\/think>\n\n```python\ndef fizzbuzz(n):\n    return [\n        'FizzBuzz' if i % 15 == 0 else 'Fizz' if i % 3 == 0 else 'Buzz' if i % 5 ", "after": "def fizzbuzz(n):\n    result = []\n    for i in range(1, n + 1):\n        if i % 15 == 0:\n            result.append('FizzBuzz')\n        elif i "}, {"user": "“吃一堑长一智”这个说法是成语还是俗语", "before": "<think>\nThinking Process:\n\n1.  **Analyze the Request:**\n    *   **Role:** M.O.N.D.A.Y. (Digital Assistant on Youyeetoo R1), Male, Capable, R", "after": "这是俗语，不是成语。它出自《后汉书》，但日常说“吃一堑长一智”时，大家把它当俗语用。"}, {"user": "编写函数 def is_anagram(s, t)，判断两个字符串 s 和 t 是否为字母异位词（忽略大小写，只考虑字母数字字符，其他字符忽略）。", "before": "<think>\n\n<\/think>\n\n```python\ndef is_anagram(s, t):\n    s = ''.join(c.lower() for c in s if c.isalnum())\n    t = ''.join(c.lower() for c in t", "after": "def is_anagram(s, t):\n    def clean(x):\n        return ''.join(c.lower() for c in x if c.isalnum())\n    return sorted(clean(s)) == sorted(cl"}]}]}}, "/api/projects": {"projects": [{"goal": "修好自己：乱承诺做不到的时间线（今晚给、三四周做完、明早能跑）", "status": "done", "steps": 39, "spent": 0.284, "kind": "repair"}, {"goal": "在工作目录里写一个 Python 小工具 board_report.py：读取板子的 CPU 温度、可用内存、数据盘 磁盘占用和开机时长，输出一段适合直接念出来的中文汇报（数字要换算成人能听懂的单位）；再写 test_board_report.py 单元测试，验收标准是 python3 -m unittest test_board_report 全部通过。", "status": "done", "steps": 25, "spent": 0.171, "kind": null}], "drive": {"ambition": "成为主人离不开的全栈助理：一听就懂、说到做到、答得又快又准，越用越懂他", "focus": "", "annoyed": 0, "pleased": 0, "wins": ["乱承诺做不到的时间线（今晚给、三四周做完、明早能跑）"], "grudges": []}}};</script>
 <script>
 const $ = (id) => document.getElementById(id);
 // The static (GitHub Pages) copy carries a sanitized snapshot instead of talking to the board.
@@ -167,7 +200,19 @@ const get = (p) => SNAP ? (SNAP[p.split("?")[0]] ? Promise.resolve(SNAP[p.split(
 const esc = (s) => String(s ?? "").replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
 function dur(s) { const d = Math.floor(s / 86400), h = Math.floor(s % 86400 / 3600); return d ? `${d}天${h}时` : `${h}时${Math.floor(s % 3600 / 60)}分`; }
 async function load() {
-  const [mem, sys, sc, pg] = await Promise.allSettled([get("/api/memory?limit=1"), get("/api/system"), get("/api/school"), get("/api/progress")]);
+  const [mem, sys, sc, pg, pj] = await Promise.allSettled([get("/api/memory?limit=1"), get("/api/system"), get("/api/school"),
+                                                           get("/api/progress"), get("/api/projects")]);
+  if (pj.status === "fulfilled") {   // her projects and her drive (learning/project.py, learning/drive.py)
+    const word = { done: "做完", gave_up: "没做成", proposed: "等主人批准", applying: "上线中", rejected: "主人没批准", running: "在做",
+                   new: "排队", failed: "出错", stopped: "停了", over_budget: "钱用完", out_of_steps: "步数用完" };
+    $("pjList").innerHTML = (pj.value.projects || []).slice(0, 6).map((p) => `<li><span>${esc(p.goal.slice(0, 34))}</span>` +
+      `<span class="tag ${p.status === "done" ? "done" : p.status === "running" ? "running" : "ask"}">${word[p.status] || esc(p.status)} · ${p.steps || 0} 步 · ${Number(p.spent || 0).toFixed(2)} 元</span></li>`).join("");
+    const dv = pj.value.drive;
+    if (dv) $("dBox").innerHTML = `<div><b>她给自己定的目标：</b>${esc(dv.ambition)}</div>` +
+      `<div><b>这一周：</b>主人夸了她 ${dv.pleased} 次，不满意 ${dv.annoyed} 次${dv.focus ? "；正在改：" + esc(dv.focus) : ""}</div>` +
+      (dv.wins.length ? `<div><b>自己修好的：</b>${dv.wins.map(esc).join("；")}</div>` : "") +
+      `<div><b>还没服气的：</b>${dv.grudges.length ? dv.grudges.map(esc).join("；") : "暂时没有"}</div>`;
+  }
   if (mem.status === "fulfilled") { const s = mem.value.stats; $("sKnow").textContent = s.knowledge; $("sLesson").textContent = s.lessons; $("sSkill").textContent = s.skills; }
   if (sys.status === "fulfilled") {
     const v = sys.value, up = v.services.filter((x) => x.state === "active").length;
@@ -178,7 +223,8 @@ async function load() {
     const d = sc.value, total = d.syllabus.length || 1, idx = Math.min(d.index, total);
     $("sClass").textContent = d.sessions; $("sMaster").textContent = d.mastered;
     $("cTitle").textContent = `课程进度：${idx} / ${total} 门已过关`; $("cBar").style.width = (100 * idx / total) + "%";
-    $("cNext").textContent = "下一课：" + (d.syllabus[idx % total] || "");
+    $("cNext").textContent = d.index >= total ? `课表上的 ${total} 门都过关了；现在主要靠夜里的自我检查和修自己变强`
+      : "下一课：" + (d.syllabus[idx] || "");
     if (d.review && d.review.who_am_i) $("cReview").innerHTML = `<b>今天的自省</b><br>我是谁：${esc(d.review.who_am_i)}<br>要干什么：${esc(d.review.purpose)}<br>` +
       (d.review.gaps || []).slice(0, 3).map((g) => "缺：" + esc(g.gap)).join("<br>");
     $("cList").innerHTML = d.history.slice(0, 14).map((h) => `<div><span>${esc((h.kind === "gap" ? "补短板·" : "") + h.topic)}</span><span class="tag ${h.mastered ? "done" : "ask"}">${h.passed}/${h.total}</span></div>`).join("");
@@ -190,9 +236,13 @@ async function load() {
     const label = { done: "完成", running: "进行中", wait: "等待", ask: "等主人确认", failed: "失败" };
     $("pSteps").innerHTML = steps.map((x) => `<li><span>${esc(x.name)}</span><span class="tag ${x.state}">${label[x.state] || x.state}</span></li>`).join("");
     if (v) {
+      const cn = ["", "第一版", "第二版", "第三版", "第四版", "第五版", "第六版", "第七版", "第八版", "第九版"];
+      const n = parseInt(String(v.version || "").replace(/\D/g, ""), 10);
+      if (cn[n]) $("lVer").textContent = cn[n];
       if (v.loss_before) { $("lBefore").textContent = v.loss_before; $("lAfter").textContent = v.loss_after; }
-      if (v.samples) $("lSamples").textContent = v.samples;
-      const c = (v.compare || []).find((x) => /pet|re\./.test(x.user)) || (v.compare || [])[0];
+      if (v.samples) $("lInfo").textContent = `${v.samples} 条自己的对话、课堂题和练习题 · 只训练很小一部分参数 · 上一版留在板子上随时可以退回`;
+      // a coding question where the base model rambled first: the clearest before / after
+      const c = (v.compare || []).find((x) => /Thinking Process/.test(x.before) && /函数|代码/.test(x.user));
       if (c) $("cmpBox").innerHTML = `<div class="q">考题：${esc(c.user)}</div><div class="cmp"><div class="bad"><i>微调前（电脑上测，会先长篇思考）</i>${esc(c.before.slice(0, 110))}…</div><div class="good"><i>微调后</i>${esc(c.after)}</div></div>`;
     }
   }
