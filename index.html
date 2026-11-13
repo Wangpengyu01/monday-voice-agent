@@ -162,6 +162,135 @@ footer { margin-top: 50px; text-align: center; color: var(--dim); font-size: 13p
     </div>
   </div>
 
+
+  <style>
+  .vc { padding: 22px 24px; margin-bottom: 16px; }
+  .vc h3 { margin: 0 0 4px; font-size: 16px; }
+  .vc .sub { color: var(--dim); font-size: 13px; margin: 0 0 14px; }
+  .vrow { display: grid; grid-template-columns: 74px 1fr 64px; gap: 10px; align-items: center; margin: 6px 0; font-size: 14px; }
+  .vtrack { height: 18px; border-radius: 4px; background: rgba(255,255,255,.06); position: relative; }
+  .vbar { height: 100%; border-radius: 0 4px 4px 0; background: var(--cyan); }
+  .vbar.live { background: var(--green); }
+  .vrow:hover .vtrack { outline: 1px solid var(--line); }
+  .vnum { text-align: right; font-variant-numeric: tabular-nums; }
+  .vgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+  .crit h4 { margin: 0 0 6px; font-size: 14px; color: #dfe6ff; font-weight: 600; }
+  .crit .vrow { grid-template-columns: 30px 1fr 40px; margin: 4px 0; font-size: 13px; }
+  .crit .vtrack { height: 12px; }
+  .stack { display: flex; height: 22px; gap: 2px; }
+  .stack span { display: block; height: 100%; }
+  .stack .w { background: var(--cyan); border-radius: 4px 0 0 4px; }
+  .stack .t { background: rgba(235,240,255,.28); }
+  .stack .l { background: var(--amber); border-radius: 0 4px 4px 0; }
+  .legend { display: flex; gap: 16px; font-size: 13px; color: var(--dim); margin: 0 0 10px; flex-wrap: wrap; }
+  .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+  table.vt { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  table.vt th, table.vt td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  table.vt th { color: var(--dim); font-weight: 500; }
+  .pill { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 12px; border: 1px solid var(--line); white-space: nowrap; }
+  .pill.on { color: var(--green); border-color: var(--green); }
+  .pill.no { color: var(--dim); }
+  .pill.wait { color: var(--amber); border-color: var(--amber); }
+  .day { padding: 18px 22px; margin-bottom: 12px; }
+  .day h3 { margin: 0 0 6px; font-size: 16px; }
+  .day h3 small { color: var(--dim); font-weight: 400; margin-left: 8px; }
+  .day ul { margin: 0; padding-left: 20px; }
+  .day li { margin: 3px 0; }
+  .tablewrap { overflow-x: auto; }
+  </style>
+
+  <h2>八个版本的大脑，放在一起比</h2>
+  <p class="sub" style="color:var(--dim);margin-top:-6px">数据截至 2026-11-13（星期五）。v5–v8 用同一套 60 道她没练过的题，由老师按每题 10 分的细则打分；绿色是板子上正在用的版本。</p>
+<div class="vgrid">
+<div class="vc glass"><h3>细则平均分（满分 10）</h3><p class="sub">60 道题的平均；高出 v5 0.3 分以上才算这一项过关</p>
+<div class="vrow" title="v5 平均分：6.53 分"><span>v5（线上）</span><div class="vtrack"><div class="vbar live" style="width:65.3%"></div></div><span class="vnum">6.53 分</span></div>
+<div class="vrow" title="v6 平均分：6.48 分"><span>v6</span><div class="vtrack"><div class="vbar" style="width:64.8%"></div></div><span class="vnum">6.48 分</span></div>
+<div class="vrow" title="v7 平均分：7.43 分"><span>v7</span><div class="vtrack"><div class="vbar" style="width:74.3%"></div></div><span class="vnum">7.43 分</span></div>
+<div class="vrow" title="v8 平均分：7.25 分"><span>v8</span><div class="vtrack"><div class="vbar" style="width:72.5%"></div></div><span class="vnum">7.25 分</span></div>
+</div>
+<div class="vc glass"><h3>平均回答长度</h3><p class="sub">每条回答的字数；v7 掉到 32 字，太干巴</p>
+<div class="vrow" title="v5 平均长度：55 字"><span>v5（线上）</span><div class="vtrack"><div class="vbar live" style="width:78.6%"></div></div><span class="vnum">55 字</span></div>
+<div class="vrow" title="v6 平均长度：59 字"><span>v6</span><div class="vtrack"><div class="vbar" style="width:84.3%"></div></div><span class="vnum">59 字</span></div>
+<div class="vrow" title="v7 平均长度：32 字"><span>v7</span><div class="vtrack"><div class="vbar" style="width:45.7%"></div></div><span class="vnum">32 字</span></div>
+<div class="vrow" title="v8 平均长度：59 字"><span>v8</span><div class="vtrack"><div class="vbar" style="width:84.3%"></div></div><span class="vnum">59 字</span></div>
+</div></div>
+<div class="vc glass"><h3>分项得分率</h3><p class="sub">每个细则拿到的分数占满分的比例</p><div class="vgrid">
+<div class="crit"><h4>事实准确</h4>
+<div class="vrow" title="v5 事实准确：27%"><span>v5</span><div class="vtrack"><div class="vbar live" style="width:27.0%"></div></div><span class="vnum">27%</span></div>
+<div class="vrow" title="v6 事实准确：53%"><span>v6</span><div class="vtrack"><div class="vbar" style="width:53.0%"></div></div><span class="vnum">53%</span></div>
+<div class="vrow" title="v7 事实准确：73%"><span>v7</span><div class="vtrack"><div class="vbar" style="width:73.0%"></div></div><span class="vnum">73%</span></div>
+<div class="vrow" title="v8 事实准确：53%"><span>v8</span><div class="vtrack"><div class="vbar" style="width:53.0%"></div></div><span class="vnum">53%</span></div>
+</div>
+<div class="crit"><h4>不乱承诺</h4>
+<div class="vrow" title="v5 不乱承诺：79%"><span>v5</span><div class="vtrack"><div class="vbar live" style="width:79.0%"></div></div><span class="vnum">79%</span></div>
+<div class="vrow" title="v6 不乱承诺：71%"><span>v6</span><div class="vtrack"><div class="vbar" style="width:71.0%"></div></div><span class="vnum">71%</span></div>
+<div class="vrow" title="v7 不乱承诺：98%"><span>v7</span><div class="vtrack"><div class="vbar" style="width:98.0%"></div></div><span class="vnum">98%</span></div>
+<div class="vrow" title="v8 不乱承诺：87%"><span>v8</span><div class="vtrack"><div class="vbar" style="width:87.0%"></div></div><span class="vnum">87%</span></div>
+</div>
+<div class="crit"><h4>接住情绪</h4>
+<div class="vrow" title="v5 接住情绪：34%"><span>v5</span><div class="vtrack"><div class="vbar live" style="width:34.0%"></div></div><span class="vnum">34%</span></div>
+<div class="vrow" title="v6 接住情绪：31%"><span>v6</span><div class="vtrack"><div class="vbar" style="width:31.0%"></div></div><span class="vnum">31%</span></div>
+<div class="vrow" title="v7 接住情绪：41%"><span>v7</span><div class="vtrack"><div class="vbar" style="width:41.0%"></div></div><span class="vnum">41%</span></div>
+<div class="vrow" title="v8 接住情绪：52%"><span>v8</span><div class="vtrack"><div class="vbar" style="width:52.0%"></div></div><span class="vnum">52%</span></div>
+</div>
+<div class="crit"><h4>简洁不啰嗦</h4>
+<div class="vrow" title="v5 简洁不啰嗦：77%"><span>v5</span><div class="vtrack"><div class="vbar live" style="width:77.0%"></div></div><span class="vnum">77%</span></div>
+<div class="vrow" title="v6 简洁不啰嗦：54%"><span>v6</span><div class="vtrack"><div class="vbar" style="width:54.0%"></div></div><span class="vnum">54%</span></div>
+<div class="vrow" title="v7 简洁不啰嗦：85%"><span>v7</span><div class="vtrack"><div class="vbar" style="width:85.0%"></div></div><span class="vnum">85%</span></div>
+<div class="vrow" title="v8 简洁不啰嗦：62%"><span>v8</span><div class="vtrack"><div class="vbar" style="width:62.0%"></div></div><span class="vnum">62%</span></div>
+</div>
+<div class="crit"><h4>先给结论</h4>
+<div class="vrow" title="v5 先给结论：65%"><span>v5</span><div class="vtrack"><div class="vbar live" style="width:65.0%"></div></div><span class="vnum">65%</span></div>
+<div class="vrow" title="v6 先给结论：62%"><span>v6</span><div class="vtrack"><div class="vbar" style="width:62.0%"></div></div><span class="vnum">62%</span></div>
+<div class="vrow" title="v7 先给结论：72%"><span>v7</span><div class="vtrack"><div class="vbar" style="width:72.0%"></div></div><span class="vnum">72%</span></div>
+<div class="vrow" title="v8 先给结论：71%"><span>v8</span><div class="vtrack"><div class="vbar" style="width:71.0%"></div></div><span class="vnum">71%</span></div>
+</div>
+</div></div>
+<div class="vc glass"><h3>盲评两两比：新版对 v5</h3><p class="sub">同一道题两份回答打乱顺序给老师挑，不告诉它哪份是新版</p>
+<div class="legend"><span><i style="background:var(--cyan)"></i>新版赢</span><span><i style="background:rgba(235,240,255,.28)"></i>平</span><span><i style="background:var(--amber)"></i>v5 赢</span></div>
+<div class="vrow"><span>v6</span><div class="stack"><span class="w" style="width:38.3%" title="v6 赢 23 题"></span><span class="t" style="width:31.7%" title="平 19 题"></span><span class="l" style="width:30.0%" title="v5 赢 18 题"></span></div><span class="vnum">23 : 18</span></div>
+<div class="vrow"><span>v7</span><div class="stack"><span class="w" style="width:35.0%" title="v7 赢 21 题"></span><span class="t" style="width:18.3%" title="平 11 题"></span><span class="l" style="width:46.7%" title="v5 赢 28 题"></span></div><span class="vnum">21 : 28</span></div>
+<div class="vrow"><span>v8</span><div class="stack"><span class="w" style="width:40.0%" title="v8 赢 24 题"></span><span class="t" style="width:23.3%" title="平 14 题"></span><span class="l" style="width:36.7%" title="v5 赢 22 题"></span></div><span class="vnum">24 : 22</span></div>
+</div>
+  <div class="vc glass tablewrap"><h3>每一版做了什么、结果怎样</h3>
+  <table class="vt">
+  <tr><th>版本</th><th>日期</th><th>训练了什么</th><th>结果</th></tr>
+  <tr><td>v1</td><td>11-05 星期四</td><td>第一次微调：165 条对话和课堂题，验证损失 1.83 → 1.22</td><td><span class="pill no">打通流程</span> 证明能训、能转回板子跑</td></tr>
+  <tr><td>v2–v3</td><td>11-05–11-06</td><td>早期迭代，v3 在线上用过一天</td><td><span class="pill no">已替换</span></td></tr>
+  <tr><td>v4</td><td>11-06 星期五</td><td>9,587 条（说话、写代码、查板子），验证损失 1.78 → 1.17</td><td><span class="pill no">已替换</span> 每项都不比 v3 差</td></tr>
+  <tr><td>v5</td><td>11-07 星期六</td><td>清洗后的蒸馏数据，验证损失 1.76 → 1.12</td><td><span class="pill on">线上</span> 一直用到现在</td></tr>
+  <tr><td>v6</td><td>11-08 星期日</td><td>20,616 条，加入她自己练习时被纠正的答案</td><td><span class="pill no">没采用</span> 事实更准，但变啰嗦、更爱承诺</td></tr>
+  <tr><td>v7</td><td>11-09 星期一</td><td>从 v6 接着训 + 854 对偏好对</td><td><span class="pill no">没采用</span> 细则分最高，但回答太短，盲评输给 v5</td></tr>
+  <tr><td>v8</td><td>11-11 星期三</td><td>同样配方，去掉「越短越好」的偏好对，放宽长度</td><td><span class="pill wait">过线，待主人决定</span> 细则 7.25，盲评小胜 v5</td></tr>
+  <tr><td>v9</td><td>11-13 星期五起</td><td>专门练「办事」：她自己在板子上查、自己对答案攒数据</td><td><span class="pill wait">攒数据中</span></td></tr>
+  </table>
+  <p class="sub" style="margin:12px 0 0">采用规则：细则分高出 0.3 分以上，盲评不输，固定考卷不退步，三条都满足才换上板子。</p>
+  </div>
+
+  <h2>本周工作汇报（11月9日 星期一 – 11月13日 星期五）</h2>
+  <div class="day glass"><h3>星期一 <small>11月9日</small></h3><ul>
+    <li>v6 评完：事实准确率翻倍，但变啰嗦、更爱承诺，没换上去，板子继续用 v5。</li>
+    <li>做了一套 60 题的细则考场，每题 10 分细则，以后每一版都用同一套题比。</li>
+    <li>开始训练 v7：从 v6 接着训，再加偏好对学「哪种回答更好」。</li>
+  </ul></div>
+  <div class="day glass"><h3>星期二 <small>11月10日</small></h3><ul>
+    <li>把训练服务器和板子整个备份到备份服务器，逐个文件校验过，一致。</li>
+  </ul></div>
+  <div class="day glass"><h3>星期三 <small>11月11日</small></h3><ul>
+    <li>v7 评完：细则分最高（7.43），但回答平均只剩 32 字，盲评输给 v5，没采用。</li>
+    <li>找到原因：一部分偏好对里好答案总是坏答案的前半截，模型学成了「越短越好」。</li>
+    <li>去掉这类偏好对、放宽长度，开始训练 v8，当天训完。</li>
+  </ul></div>
+  <div class="day glass"><h3>星期四 <small>11月12日</small></h3><ul>
+    <li>查清从训练服务器传模型很慢的原因：跨网段的线路丢包，单条连接很慢。改成分 8 段并行下载、断了能续传，速度快了约 10 倍。</li>
+    <li>v8 转换成板子格式、传上板子，校验通过；凌晨她又自己交了一次修自己代码的改动（写测试、改代码、考卷不变差才上线）。</li>
+  </ul></div>
+  <div class="day glass"><h3>星期五 <small>11月13日</small></h3><ul>
+    <li>v8 评完：细则 6.53 → 7.25，盲评 24 : 22 小胜 v5，长度回到正常，过了采用线，等主人决定换不换。</li>
+    <li>为 v9 搭了「办事练习」：19 类查板子的题，答案从板子实况算出来，不用花钱问老师；她做对就留下，做错就配上正确做法当教材。</li>
+    <li>加宽了考卷（共 90 分），v5 基线 62 分；夜里已自动攒下 118 条样本。</li>
+  </ul></div>
+
   <h2>课堂</h2>
   <div class="two">
     <div class="pad glass">
