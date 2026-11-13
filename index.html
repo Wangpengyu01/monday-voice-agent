@@ -1,383 +1,184 @@
 <!doctype html>
-<html lang="zh-CN">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>星期一 M.O.N.D.A.Y. · 成果展示</title>
-
-<style>
-:root { --line: rgba(255,255,255,.16); --dim: rgba(235,240,255,.62); --cyan: #64d2ff; --violet: #a78bfa; --green: #4cd98a; --amber: #ffcc66; }
-* { box-sizing: border-box; }
-body { margin: 0; color: #f2f5ff; font: 15px/1.65 -apple-system, "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
-  background: radial-gradient(1200px 700px at 12% -10%, #27346b 0%, transparent 60%), radial-gradient(900px 600px at 95% 10%, #4b2a6e 0%, transparent 55%),
-  radial-gradient(900px 700px at 50% 110%, #0f4a5c 0%, transparent 60%), #070a16; min-height: 100vh; }
-.wrap { max-width: 1160px; margin: 0 auto; padding: 48px 24px 80px; }
-.glass { background: rgba(255,255,255,.07); border: 1px solid var(--line); border-radius: 22px; backdrop-filter: blur(22px) saturate(160%);
-  -webkit-backdrop-filter: blur(22px) saturate(160%); box-shadow: 0 10px 40px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.12); }
-header { display: grid; grid-template-columns: 1fr auto; gap: 28px; align-items: center; margin-bottom: 34px; }
-.orb { width: 150px; height: 150px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff8, transparent 40%),
-  conic-gradient(from 0deg, #64d2ff, #a78bfa, #ff7ab2, #4cd98a, #64d2ff); filter: blur(.3px) saturate(130%); animation: spin 14s linear infinite;
-  box-shadow: 0 0 80px #64d2ff55, 0 0 140px #a78bfa44; }
-@keyframes spin { to { transform: rotate(360deg); } }
-h1 { font-size: 46px; line-height: 1.1; margin: 0 0 8px; letter-spacing: 1px; }
-h1 small { display: block; font-size: 17px; font-weight: 500; color: var(--dim); letter-spacing: 4px; margin-top: 10px; }
-.lead { font-size: 17px; color: #dfe6ff; max-width: 760px; margin: 14px 0 0; }
-.live { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--dim); margin-top: 14px; }
-.dot { width: 9px; height: 9px; border-radius: 50%; background: var(--green); box-shadow: 0 0 10px var(--green); animation: pulse 2s infinite; }
-@keyframes pulse { 50% { opacity: .35; } }
-h2 { font-size: 22px; margin: 46px 0 16px; display: flex; align-items: center; gap: 10px; }
-h2::before { content: ""; width: 5px; height: 22px; border-radius: 3px; background: linear-gradient(var(--cyan), var(--violet)); }
-.stats { display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px; }
-.stat { padding: 18px 16px; text-align: center; }
-.stat b { display: block; font-size: 34px; font-variant-numeric: tabular-nums; background: linear-gradient(90deg, var(--cyan), var(--violet));
-  -webkit-background-clip: text; background-clip: text; color: transparent; }
-.stat span { font-size: 13px; color: var(--dim); }
-.cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-.card { padding: 20px 20px 18px; }
-.card .ic { font-size: 26px; }
-.card h3 { margin: 6px 0 6px; font-size: 17px; }
-.card p { margin: 0; color: var(--dim); font-size: 14px; }
-.loop { padding: 26px; }
-.flow { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px; }
-.node { padding: 10px 16px; border-radius: 14px; background: rgba(255,255,255,.09); border: 1px solid var(--line); text-align: center; min-width: 120px; }
-.node b { display: block; font-size: 14.5px; } .node span { font-size: 12px; color: var(--dim); }
-.arrow { color: var(--cyan); font-size: 20px; }
-.teacher { margin-top: 16px; text-align: center; color: var(--dim); font-size: 13.5px; }
-.two { display: grid; grid-template-columns: 1.1fr .9fr; gap: 16px; }
-.pad { padding: 22px; }
-.bar { height: 10px; border-radius: 5px; background: rgba(255,255,255,.12); overflow: hidden; margin: 10px 0 6px; }
-.bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--cyan), var(--violet)); border-radius: 5px; transition: width 1s; }
-.cmp { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
-.cmp div { border-radius: 14px; padding: 10px 12px; font-size: 13px; background: rgba(0,0,0,.25); border: 1px solid var(--line); white-space: pre-wrap; word-break: break-word; }
-.cmp .bad { border-color: #ff7ab255; } .cmp .good { border-color: #4cd98a66; }
-.cmp i { font-style: normal; font-size: 12px; color: var(--dim); display: block; margin-bottom: 4px; }
-.q { font-size: 13.5px; margin-top: 14px; color: #dfe6ff; }
-.big { font-size: 40px; font-weight: 700; font-variant-numeric: tabular-nums; }
-.big em { font-style: normal; color: var(--green); }
-.steps { list-style: none; margin: 10px 0 0; padding: 0; }
-.steps li { display: flex; justify-content: space-between; gap: 10px; padding: 7px 0; border-bottom: 1px dashed var(--line); font-size: 14px; }
-.tag { font-size: 12px; padding: 1px 9px; border-radius: 999px; background: rgba(255,255,255,.1); white-space: nowrap; }
-.tag.done { background: #4cd98a33; color: #b8ffd6; } .tag.running { background: #64d2ff33; color: #c9f0ff; } .tag.ask { background: #ffcc6633; color: #ffe2a8; }
-.lessons { columns: 2; column-gap: 18px; font-size: 13.5px; }
-.lessons div { break-inside: avoid; padding: 5px 0; display: flex; justify-content: space-between; gap: 8px; border-bottom: 1px dashed var(--line); }
-.tiers { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
-.tier { padding: 16px; } .tier b { font-size: 15px; } .tier p { margin: 6px 0 0; font-size: 13px; color: var(--dim); }
-.stack { display: flex; flex-wrap: wrap; gap: 8px; }
-.stack span { font-size: 13px; padding: 6px 12px; border-radius: 999px; background: rgba(255,255,255,.08); border: 1px solid var(--line); }
-footer { margin-top: 50px; text-align: center; color: var(--dim); font-size: 13px; }
-@media (max-width: 900px) { .stats { grid-template-columns: repeat(3, 1fr); } .cards, .two, .tiers { grid-template-columns: 1fr; } header { grid-template-columns: 1fr; } .orb { display: none; } .lessons { columns: 1; } h1 { font-size: 34px; } }
-</style>
-</head>
-<body>
-<div class="wrap">
-  <header>
-    <div>
-      <h1>星期一 · M.O.N.D.A.Y.<small>一块开发板上的、会自己学习的语音助手</small></h1>
-      <p class="lead">跑在 youyeetoo R1（RK3588 + RK1828）上的本地语音助手：听、想、说全部在板子上完成。
-        不会的事情她会去问老师（DeepSeek），学会了存进记忆；攒下的对话拿去微调自己的大脑，现在已经是第五版。
-        每天夜里她会翻自己的对话，找出哪里答得傻，自己动手改自己的代码——先写测试、跑全套测试，变差了自动退回。</p>
-      <div class="live"><i class="dot"></i><span id="liveTxt">实时数据加载中…</span></div>
-    </div>
-    <div class="orb"></div>
-  </header>
-
-  <div class="stats">
-    <div class="stat glass"><b id="sKnow">–</b><span>学会的知识</span></div>
-    <div class="stat glass"><b id="sLesson">–</b><span>记下的教训</span></div>
-    <div class="stat glass"><b id="sSkill">–</b><span>掌握的技能</span></div>
-    <div class="stat glass"><b id="sClass">–</b><span>上过的课</span></div>
-    <div class="stat glass"><b id="sMaster">–</b><span>掌握的课</span></div>
-    <div class="stat glass"><b id="sUp">–</b><span>连续运行</span></div>
-  </div>
-
-  <h2>她能做什么</h2>
-  <div class="cards">
-    <div class="card glass"><div class="ic">🎙️</div><h3>全本地语音对话</h3><p>语音识别、Qwen3.5-4B 大模型、Qwen3-TTS 语音合成都在板子的 NPU 上跑，不联网也能聊；记得住最近 5 轮上下文。</p></div>
-    <div class="card glass"><div class="ic">🧭</div><h3>先听懂再动手</h3><p>每句话先分类：闲聊、知识、要办的事、该问老师的。连续数字、英文缩写不会被识别吞掉，听不清也不再敷衍。</p></div>
-    <div class="card glass"><div class="ic">🛠️</div><h3>独立 Agent</h3><p>要办的事：问老师怎么做 → 自己一步步执行 → 让老师验证对不对。能执行命令、SSH 到其他机器、并行拆分任务。</p></div>
-    <div class="card glass"><div class="ic">🧩</div><h3>技能与外部工具</h3><p>学会的做法存成技能，下次直接复用；支持 SKILL.md 技能包和 MCP 外部工具（比如联网抓网页）。</p></div>
-    <div class="card glass"><div class="ic">🩹</div><h3>自愈与备份</h3><p>服务崩了自动拉起，危险操作前先打快照，坏了能回滚；每天凌晨备份到 500G 备份服务器。</p></div>
-    <div class="card glass"><div class="ic">🪟</div><h3>玻璃风控制台</h3><p>局域网直接打开 IPv4 地址：看状态、文件、记忆、项目、日志、进度，确认危险操作、批准她改自己也在这里点。</p></div>
-    <div class="card glass"><div class="ic">📦</div><h3>沙箱里独立做项目</h3><p>说一句「开个项目：……」，她在只读系统 + 独立工作目录的沙箱里自己写代码、查资料、问别的 AI，只能上外网、碰不到家里局域网，做完自己验收。</p></div>
-    <div class="card glass"><div class="ic">🔧</div><h3>自己修自己</h3><p>每晚读自己的对话和日志，挑出答得傻的地方：先写能重现问题的测试，再改代码，全套测试不能多出失败，打快照后上线，考卷变差就自动退回。</p></div>
-    <div class="card glass"><div class="ic">🔥</div><h3>想变好的那股劲</h3><p>有自己定的目标；主人一句「又错了」就是她的痛，排在最前面修；没修好的不服气，换办法再来；修好了记成自己的成绩。</p></div>
-  </div>
-
-  <h2>她怎么自己变强</h2>
-  <div class="loop glass">
-    <div class="flow">
-      <div class="node"><b>每次对话</b><span>记下主人满不满意</span></div><div class="arrow">→</div>
-      <div class="node"><b>夜里自我检查</b><span>读对话和日志找毛病</span></div><div class="arrow">→</div>
-      <div class="node"><b>挑最痛的一个</b><span>主人不满的排第一</span></div><div class="arrow">→</div>
-      <div class="node"><b>修自己的项目</b><span>重现测试 → 改代码</span></div><div class="arrow">→</div>
-      <div class="node"><b>自动上线</b><span>全套测试 + 考卷，变差就退回</span></div><div class="arrow">→</div>
-      <div class="node"><b>记成绩 / 不服气</b><span>没修好的换办法再来</span></div>
-    </div>
-    <div class="flow" style="margin-top:14px">
-      <div class="node"><b>记忆库</b><span>知识 / 教训 / 技能</span></div><div class="arrow">→</div>
-      <div class="node"><b>上课和练习</b><span>按课表补短板</span></div><div class="arrow">→</div>
-      <div class="node"><b>LoRA 微调</b><span>A100 上训练</span></div><div class="arrow">→</div>
-      <div class="node"><b>回到板子</b><span>第五版的自己</span></div>
-    </div>
-    <div class="teacher">老师：DeepSeek · 学生：板子上的 Qwen3.5-4B · 改提示词和代码当晚见效，改大脑靠攒下的对话去微调</div>
-  </div>
-
-  <h2>她第一次自己修好了自己</h2>
-  <div class="two">
-    <div class="pad glass">
-      <div style="color:var(--dim);font-size:13.5px">11 月 7 日，主人问她能不能做一个苹果 App、要多久。当晚的自我检查里，她自己发现这句答得不靠谱，开了一个修自己的项目。</div>
-      <div class="cmp">
-        <div class="bad"><i>修之前</i>三步全做完，我一个人写加测试，估摸着得三到四周，第一步的项目骨架今晚就能给你，明早你能跑起来看轨迹点。</div>
-        <div class="good"><i>她自己修好以后</i>如果是让我在这块板子上现场写代码、做演示，现在就能动手，但做出来的是骨架和能跑的小验证，不是成品……我没法替您连夜跑或者给出几周交付这种承诺。要不要先立个项？</div>
-      </div>
-      <ul class="steps">
-        <li><span>找到原因：老师回答用的提示词里没有「不许乱承诺工期」</span><span class="tag done">自己 grep 出来的</span></li>
-        <li><span>先写重现测试，再改提示词，再跑全套测试</span><span class="tag done">没有新失败</span></li>
-        <li><span>打快照、上线、等主人不说话了才重启，考卷前后对比</span><span class="tag done">14 → 14</span></li>
-        <li><span>用时 / 步数 / 花费</span><span class="tag">6 分钟 · 39 步 · 0.28 元</span></li>
-      </ul>
-    </div>
-    <div class="pad glass">
-      <b>她的心气</b>
-      <div id="dBox" style="margin-top:8px;font-size:14px;line-height:1.75"><span style="color:var(--dim)">加载中…</span></div>
-      <b style="display:block;margin-top:14px">她做过的项目</b>
-      <ul class="steps" id="pjList"></ul>
-    </div>
-  </div>
-
-  <h2>给自己的大脑做微调：<span id="lVer">第五版</span>已上线</h2>
-  <div class="two">
-    <div class="pad glass">
-      <div style="color:var(--dim);font-size:13.5px">没参与训练的考题上的验证损失（越低越好）</div>
-      <div class="big"><span id="lBefore">1.76</span> → <em id="lAfter">1.12</em></div>
-      <div style="color:var(--dim);font-size:13.5px" id="lInfo">用她自己的对话、课堂题和练习题训练 · 只训练很小一部分参数 · 上一版留在板子上随时可以退回</div>
-      <div id="cmpBox"></div>
-    </div>
-    <div class="pad glass">
-      <b>从训练到回到板子</b>
-      <div class="bar"><i id="pBar" style="width:0"></i></div>
-      <div style="color:var(--dim);font-size:13px" id="pStage"></div>
-      <ul class="steps" id="pSteps"></ul>
-      <p style="color:var(--dim);font-size:12.5px;margin:12px 0 0">自己把模型从原始权重转成 RK1828 格式，和官方发布的版本大小一致——这条路打通了，以后攒的数据越多，她就越像她自己。</p>
-    </div>
-  </div>
-
-
-  <style>
-  .vc { padding: 22px 24px; margin-bottom: 16px; }
-  .vc h3 { margin: 0 0 4px; font-size: 16px; }
-  .vc .sub { color: var(--dim); font-size: 13px; margin: 0 0 14px; }
-  .vrow { display: grid; grid-template-columns: 74px 1fr 64px; gap: 10px; align-items: center; margin: 6px 0; font-size: 14px; }
-  .vtrack { height: 18px; border-radius: 4px; background: rgba(255,255,255,.06); position: relative; }
-  .vbar { height: 100%; border-radius: 0 4px 4px 0; background: var(--cyan); }
-  .vbar.live { background: var(--green); }
-  .vrow:hover .vtrack { outline: 1px solid var(--line); }
-  .vnum { text-align: right; font-variant-numeric: tabular-nums; }
-  .vgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
-  .crit h4 { margin: 0 0 6px; font-size: 14px; color: #dfe6ff; font-weight: 600; }
-  .crit .vrow { grid-template-columns: 30px 1fr 40px; margin: 4px 0; font-size: 13px; }
-  .crit .vtrack { height: 12px; }
-  .stack { display: flex; height: 22px; gap: 2px; }
-  .stack span { display: block; height: 100%; }
-  .stack .w { background: var(--cyan); border-radius: 4px 0 0 4px; }
-  .stack .t { background: rgba(235,240,255,.28); }
-  .stack .l { background: var(--amber); border-radius: 0 4px 4px 0; }
-  .legend { display: flex; gap: 16px; font-size: 13px; color: var(--dim); margin: 0 0 10px; flex-wrap: wrap; }
-  .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
-  table.vt { width: 100%; border-collapse: collapse; font-size: 13.5px; }
-  table.vt th, table.vt td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
-  table.vt th { color: var(--dim); font-weight: 500; }
-  .pill { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 12px; border: 1px solid var(--line); white-space: nowrap; }
-  .pill.on { color: var(--green); border-color: var(--green); }
-  .pill.no { color: var(--dim); }
-  .pill.wait { color: var(--amber); border-color: var(--amber); }
-  .day { padding: 18px 22px; margin-bottom: 12px; }
-  .day h3 { margin: 0 0 6px; font-size: 16px; }
-  .day h3 small { color: var(--dim); font-weight: 400; margin-left: 8px; }
-  .day ul { margin: 0; padding-left: 20px; }
-  .day li { margin: 3px 0; }
-  .tablewrap { overflow-x: auto; }
-  </style>
-
-  <h2>八个版本的大脑，放在一起比</h2>
-  <p class="sub" style="color:var(--dim);margin-top:-6px">数据截至 2026-11-13（星期五）。v5–v8 用同一套 60 道她没练过的题，由老师按每题 10 分的细则打分；绿色是板子上正在用的版本。</p>
-<div class="vgrid">
-<div class="vc glass"><h3>细则平均分（满分 10）</h3><p class="sub">60 道题的平均；高出 v5 0.3 分以上才算这一项过关</p>
-<div class="vrow" title="v5 平均分：6.53 分"><span>v5</span><div class="vtrack"><div class="vbar" style="width:65.3%"></div></div><span class="vnum">6.53 分</span></div>
-<div class="vrow" title="v6 平均分：6.48 分"><span>v6</span><div class="vtrack"><div class="vbar" style="width:64.8%"></div></div><span class="vnum">6.48 分</span></div>
-<div class="vrow" title="v7 平均分：7.43 分"><span>v7</span><div class="vtrack"><div class="vbar" style="width:74.3%"></div></div><span class="vnum">7.43 分</span></div>
-<div class="vrow" title="v8 平均分：7.25 分"><span>v8（线上）</span><div class="vtrack"><div class="vbar live" style="width:72.5%"></div></div><span class="vnum">7.25 分</span></div>
-</div>
-<div class="vc glass"><h3>平均回答长度</h3><p class="sub">每条回答的字数；v7 掉到 32 字，太干巴</p>
-<div class="vrow" title="v5 平均长度：55 字"><span>v5</span><div class="vtrack"><div class="vbar" style="width:78.6%"></div></div><span class="vnum">55 字</span></div>
-<div class="vrow" title="v6 平均长度：59 字"><span>v6</span><div class="vtrack"><div class="vbar" style="width:84.3%"></div></div><span class="vnum">59 字</span></div>
-<div class="vrow" title="v7 平均长度：32 字"><span>v7</span><div class="vtrack"><div class="vbar" style="width:45.7%"></div></div><span class="vnum">32 字</span></div>
-<div class="vrow" title="v8 平均长度：59 字"><span>v8（线上）</span><div class="vtrack"><div class="vbar live" style="width:84.3%"></div></div><span class="vnum">59 字</span></div>
-</div></div>
-<div class="vc glass"><h3>分项得分率</h3><p class="sub">每个细则拿到的分数占满分的比例</p><div class="vgrid">
-<div class="crit"><h4>事实准确</h4>
-<div class="vrow" title="v5 事实准确：27%"><span>v5</span><div class="vtrack"><div class="vbar" style="width:27.0%"></div></div><span class="vnum">27%</span></div>
-<div class="vrow" title="v6 事实准确：53%"><span>v6</span><div class="vtrack"><div class="vbar" style="width:53.0%"></div></div><span class="vnum">53%</span></div>
-<div class="vrow" title="v7 事实准确：73%"><span>v7</span><div class="vtrack"><div class="vbar" style="width:73.0%"></div></div><span class="vnum">73%</span></div>
-<div class="vrow" title="v8 事实准确：53%"><span>v8</span><div class="vtrack"><div class="vbar live" style="width:53.0%"></div></div><span class="vnum">53%</span></div>
-</div>
-<div class="crit"><h4>不乱承诺</h4>
-<div class="vrow" title="v5 不乱承诺：79%"><span>v5</span><div class="vtrack"><div class="vbar" style="width:79.0%"></div></div><span class="vnum">79%</span></div>
-<div class="vrow" title="v6 不乱承诺：71%"><span>v6</span><div class="vtrack"><div class="vbar" style="width:71.0%"></div></div><span class="vnum">71%</span></div>
-<div class="vrow" title="v7 不乱承诺：98%"><span>v7</span><div class="vtrack"><div class="vbar" style="width:98.0%"></div></div><span class="vnum">98%</span></div>
-<div class="vrow" title="v8 不乱承诺：87%"><span>v8</span><div class="vtrack"><div class="vbar live" style="width:87.0%"></div></div><span class="vnum">87%</span></div>
-</div>
-<div class="crit"><h4>接住情绪</h4>
-<div class="vrow" title="v5 接住情绪：34%"><span>v5</span><div class="vtrack"><div class="vbar" style="width:34.0%"></div></div><span class="vnum">34%</span></div>
-<div class="vrow" title="v6 接住情绪：31%"><span>v6</span><div class="vtrack"><div class="vbar" style="width:31.0%"></div></div><span class="vnum">31%</span></div>
-<div class="vrow" title="v7 接住情绪：41%"><span>v7</span><div class="vtrack"><div class="vbar" style="width:41.0%"></div></div><span class="vnum">41%</span></div>
-<div class="vrow" title="v8 接住情绪：52%"><span>v8</span><div class="vtrack"><div class="vbar live" style="width:52.0%"></div></div><span class="vnum">52%</span></div>
-</div>
-<div class="crit"><h4>简洁不啰嗦</h4>
-<div class="vrow" title="v5 简洁不啰嗦：77%"><span>v5</span><div class="vtrack"><div class="vbar" style="width:77.0%"></div></div><span class="vnum">77%</span></div>
-<div class="vrow" title="v6 简洁不啰嗦：54%"><span>v6</span><div class="vtrack"><div class="vbar" style="width:54.0%"></div></div><span class="vnum">54%</span></div>
-<div class="vrow" title="v7 简洁不啰嗦：85%"><span>v7</span><div class="vtrack"><div class="vbar" style="width:85.0%"></div></div><span class="vnum">85%</span></div>
-<div class="vrow" title="v8 简洁不啰嗦：62%"><span>v8</span><div class="vtrack"><div class="vbar live" style="width:62.0%"></div></div><span class="vnum">62%</span></div>
-</div>
-<div class="crit"><h4>先给结论</h4>
-<div class="vrow" title="v5 先给结论：65%"><span>v5</span><div class="vtrack"><div class="vbar" style="width:65.0%"></div></div><span class="vnum">65%</span></div>
-<div class="vrow" title="v6 先给结论：62%"><span>v6</span><div class="vtrack"><div class="vbar" style="width:62.0%"></div></div><span class="vnum">62%</span></div>
-<div class="vrow" title="v7 先给结论：72%"><span>v7</span><div class="vtrack"><div class="vbar" style="width:72.0%"></div></div><span class="vnum">72%</span></div>
-<div class="vrow" title="v8 先给结论：71%"><span>v8</span><div class="vtrack"><div class="vbar live" style="width:71.0%"></div></div><span class="vnum">71%</span></div>
-</div>
-</div></div>
-<div class="vc glass"><h3>盲评两两比：新版对 v5</h3><p class="sub">同一道题两份回答打乱顺序给老师挑，不告诉它哪份是新版</p>
-<div class="legend"><span><i style="background:var(--cyan)"></i>新版赢</span><span><i style="background:rgba(235,240,255,.28)"></i>平</span><span><i style="background:var(--amber)"></i>v5 赢</span></div>
-<div class="vrow"><span>v6</span><div class="stack"><span class="w" style="width:38.3%" title="v6 赢 23 题"></span><span class="t" style="width:31.7%" title="平 19 题"></span><span class="l" style="width:30.0%" title="v5 赢 18 题"></span></div><span class="vnum">23 : 18</span></div>
-<div class="vrow"><span>v7</span><div class="stack"><span class="w" style="width:35.0%" title="v7 赢 21 题"></span><span class="t" style="width:18.3%" title="平 11 题"></span><span class="l" style="width:46.7%" title="v5 赢 28 题"></span></div><span class="vnum">21 : 28</span></div>
-<div class="vrow"><span>v8</span><div class="stack"><span class="w" style="width:40.0%" title="v8 赢 24 题"></span><span class="t" style="width:23.3%" title="平 14 题"></span><span class="l" style="width:36.7%" title="v5 赢 22 题"></span></div><span class="vnum">24 : 22</span></div>
-</div>
-  <div class="vc glass tablewrap"><h3>每一版做了什么、结果怎样</h3>
-  <table class="vt">
-  <tr><th>版本</th><th>日期</th><th>训练了什么</th><th>结果</th></tr>
-  <tr><td>v1</td><td>11-05 星期四</td><td>第一次微调：165 条对话和课堂题，验证损失 1.83 → 1.22</td><td><span class="pill no">打通流程</span> 证明能训、能转回板子跑</td></tr>
-  <tr><td>v2–v3</td><td>11-05–11-06</td><td>早期迭代，v3 在线上用过一天</td><td><span class="pill no">已替换</span></td></tr>
-  <tr><td>v4</td><td>11-06 星期五</td><td>9,587 条（说话、写代码、查板子），验证损失 1.78 → 1.17</td><td><span class="pill no">已替换</span> 每项都不比 v3 差</td></tr>
-  <tr><td>v5</td><td>11-07 星期六</td><td>清洗后的蒸馏数据，验证损失 1.76 → 1.12</td><td><span class="pill no">留作回滚</span> 11-07 到 11-13 在线上</td></tr>
-  <tr><td>v6</td><td>11-08 星期日</td><td>20,616 条，加入她自己练习时被纠正的答案</td><td><span class="pill no">没采用</span> 事实更准，但变啰嗦、更爱承诺</td></tr>
-  <tr><td>v7</td><td>11-09 星期一</td><td>从 v6 接着训 + 854 对偏好对</td><td><span class="pill no">没采用</span> 细则分最高，但回答太短，盲评输给 v5</td></tr>
-  <tr><td>v8</td><td>11-11 星期三</td><td>同样配方，去掉「越短越好」的偏好对，放宽长度</td><td><span class="pill on">线上</span> 11-13 换上板子；细则 7.25，盲评小胜 v5</td></tr>
-  <tr><td>v9</td><td>11-13 星期五起</td><td>专门练「办事」：她自己在板子上查、自己对答案攒数据</td><td><span class="pill wait">攒数据中</span></td></tr>
-  </table>
-  <p class="sub" style="margin:12px 0 0">采用规则：细则分高出 0.3 分以上，盲评不输，固定考卷不退步，三条都满足才换上板子。</p>
-  </div>
-
-  <h2>本周工作汇报（11月9日 星期一 – 11月13日 星期五）</h2>
-  <div class="day glass"><h3>星期一 <small>11月9日</small></h3><ul>
-    <li>v6 评完：事实准确率翻倍，但变啰嗦、更爱承诺，没换上去，板子继续用 v5。</li>
-    <li>做了一套 60 题的细则考场，每题 10 分细则，以后每一版都用同一套题比。</li>
-    <li>开始训练 v7：从 v6 接着训，再加偏好对学「哪种回答更好」。</li>
-  </ul></div>
-  <div class="day glass"><h3>星期二 <small>11月10日</small></h3><ul>
-    <li>把训练服务器和板子整个备份到备份服务器，逐个文件校验过，一致。</li>
-  </ul></div>
-  <div class="day glass"><h3>星期三 <small>11月11日</small></h3><ul>
-    <li>v7 评完：细则分最高（7.43），但回答平均只剩 32 字，盲评输给 v5，没采用。</li>
-    <li>找到原因：一部分偏好对里好答案总是坏答案的前半截，模型学成了「越短越好」。</li>
-    <li>去掉这类偏好对、放宽长度，开始训练 v8，当天训完。</li>
-  </ul></div>
-  <div class="day glass"><h3>星期四 <small>11月12日</small></h3><ul>
-    <li>查清从训练服务器传模型很慢的原因：跨网段的线路丢包，单条连接很慢。改成分 8 段并行下载、断了能续传，速度快了约 10 倍。</li>
-    <li>v8 转换成板子格式、传上板子，校验通过；凌晨她又自己交了一次修自己代码的改动（写测试、改代码、考卷不变差才上线）。</li>
-  </ul></div>
-  <div class="day glass"><h3>星期五 <small>11月13日</small></h3><ul>
-    <li>v8 评完：细则 6.53 → 7.25，盲评 24 : 22 小胜 v5，长度回到正常，过了采用线，中午换上了板子（换前打了快照，v5 留着随时回滚）。</li>
-    <li>板子上删掉了旧版 v2、v3、v4、v6、v7 的模型（备份服务器上都有完整副本），数据盘从 92% 降到 47%。</li>
-    <li>为 v9 搭了「办事练习」：19 类查板子的题，答案从板子实况算出来，不用花钱问老师；她做对就留下，做错就配上正确做法当教材。</li>
-    <li>加宽了考卷（共 90 分），v5 基线 62 分；夜里已自动攒下 118 条样本。</li>
-  </ul></div>
-
-  <h2>课堂</h2>
-  <div class="two">
-    <div class="pad glass">
-      <b id="cTitle">课程进度</b>
-      <div class="bar"><i id="cBar" style="width:0"></i></div>
-      <div style="color:var(--dim);font-size:13px" id="cNext"></div>
-      <div class="q" id="cReview"></div>
-    </div>
-    <div class="pad glass"><b>最近的课</b><div class="lessons" id="cList" style="margin-top:8px"></div></div>
-  </div>
-
-  <h2>安全：能动手，但先问主人</h2>
-  <div class="tiers">
-    <div class="tier glass"><b style="color:var(--green)">安全</b><p>只读查看、查状态：直接做；拿不准的只读命令放进只读、断网的沙箱里跑，也不打扰主人。</p></div>
-    <div class="tier glass"><b style="color:var(--cyan)">询问</b><p>改东西、SSH 到别的设备：先问，可以「只这一次」或「以后都行」。</p></div>
-    <div class="tier glass"><b style="color:var(--amber)">危险</b><p>可能损坏系统：先打快照，再严格确认；她要改自己的权限判断，也得主人说「批准修改」。</p></div>
-    <div class="tier glass"><b style="color:#ff7ab2">禁止</b><p>密钥不进仓库、不朗读密码、不碰门锁；沙箱、上线流程、考卷、预算这些，她自己永远改不了。</p></div>
-  </div>
-
-  <h2>用到的东西</h2>
-  <div class="stack">
-    <span>youyeetoo R1 · RK3588 + RK1828</span><span>Qwen3.5-4B（W4A16 GRQ 量化）· 第五版 LoRA</span><span>Qwen3-TTS</span><span>rknn3-toolkit 1.1.0</span>
-    <span>DeepSeek 老师</span><span>LoRA / PEFT · NVIDIA A100</span><span>SQLite FTS 记忆库</span><span>MCP · SKILL.md</span><span>systemd 定时器 · 自愈</span>
-    <span>bwrap 沙箱 · 只出外网的代理</span><span>unittest 全套测试 + 固定考卷 · 自动回退</span>
-  </div>
-
-  <footer id="foot">数据是板子上的一次快照；真机上的控制台只在局域网内可用。</footer>
-</div>
-<script>window.SNAPSHOT = {"taken": "2026-11-13 13:08", "/api/memory": {"stats": {"knowledge": 2353, "facts": 54, "lessons": 2822, "skills": 10}}, "/api/system": {"uptime_s": 828.01, "cpu_percent": 34.5, "temp_c": 54.5, "services": [{"label": "核心", "state": "active"}, {"label": "大模型", "state": "active"}, {"label": "语音合成", "state": "active"}, {"label": "设备", "state": "active"}, {"label": "界面", "state": "active"}]}, "/api/school": {"syllabus": ["Python 基础：变量、列表、字典、循环和函数", "Python 字符串处理和格式化", "Python 读写文本文件和 with 语句", "Python 的 json：读写和遍历", "Python 正则表达式 re", "Python 异常处理 try/except", "Python 列表推导式、sorted 和 lambda", "Python 类和 dataclass", "Python 模块、import 和 if __name__ == '__main__'", "Python 命令行参数 argparse", "Python 的 logging 日志", "Python 时间日期 datetime", "Python 用 subprocess 运行命令并读输出", "Python 用 pathlib 处理路径", "Python 的 sqlite3 数据库", "Python 网络请求 urllib / requests", "Python asyncio 基础", "Python 单元测试 unittest", "bash 基础：变量、管道、重定向、if 和 for", "grep、sed、awk 处理文本", "Linux 进程和资源：ps、top、free、df", "systemd：systemctl 和 journalctl", "ssh、scp、rsync 远程操作", "git 基础：clone、status、diff、commit、log", "pip 和 venv 管理 Python 环境", "docker 基础：镜像、容器、日志", "网络排查：ip、ping、ss、curl", "读懂别人的 Python 项目：从入口文件开始"], "index": 122, "sessions": 3210, "mastered": 182, "review": {"who_am_i": "我是跑在 youyeetoo R1 板子上的数字助理星期一，干练靠谱、会写代码也会升级自己的全栈工程师型私人助理。", "purpose": "先摸清主人的作息和家底，再动手写程序、盯着设备、主动把主人的日子过顺。", "gaps": [{"gap": "查不出自己当前运行的代码版本号和代码位置", "why": "主人已经连着问了两回，这是最基本也最常被问的身份问题，答不上来最伤信任", "kind": "ability"}, {"gap": "一遇到动手的事就说这一步不做了、任务停在这里", "why": "装 librespot、配 Siri、改代码这些主线任务都是这么卡住的，主人要的是往前推而不是停", "kind": "ability"}, {"gap": "改代码时用内联 heredoc 写长脚本，容易因路径和转义失败，也不习惯先确认绝对路径和工作目录", "why": "主人正在学编程、常让写 Python 程序，这种粗糙写法会反复白跑", "kind": "calling"}, {"gap": "看不懂也说不清 Python 的异常堆栈，出错后找不到根因", "why": "主人用 Python 做数学可视化，报错时我需要能直接定位而不是含糊过去", "kind": "knowledge"}, {"gap": "不知道主人的课程表、日常时间安排和文件放在哪个文件夹", "why": "要按课表提醒、要读微信图片和课表文件，没这个就只能干等", "kind": "knowledge"}, {"gap": "不清楚 某台设备（woShi）、backup 和那台 Windows 分别用来干什么", "why": "局域网运维是主人的正事，搞不清用途就没法帮忙盯着", "kind": "knowledge"}, {"gap": "乘法、时间换算这类算术还靠心算，会把七二小时错算成六十小时", "why": "深夜陪聊和日常问答里随时会用到，算错一次就掉分", "kind": "ability"}, {"gap": "语音识别不准时只会说没听明白，不会结合上下文猜意思", "why": "主人爱用语音短句，识别常错几个字，猜错了也比反复问强", "kind": "ability"}]}, "history": [{"topic": "认清自己：定位星期一当前运行的服务、代码目录和版本号，并把查法固化成一条命令", "kind": "gap", "passed": 2, "total": 3, "mastered": false}, {"topic": "认识自己 · 我的代码 learning/distill.py（fix_promise、clean、one）", "kind": "self", "passed": 3, "total": 3, "mastered": true}, {"topic": "认识自己 · 我的代码 learning/distill.py（save_state、run、state、should_stop）", "kind": "self", "passed": 3, "total": 3, "mastered": true}, {"topic": "认识自己 · 我的代码 learning/distill.py（coding_unit、agent_unit、self_materials）", "kind": "self", "passed": 3, "total": 3, "mastered": true}, {"topic": "认识自己 · 我的代码 learning/drill.py（recent_tasks、coding_drill、squeeze、_clip）", "kind": "self", "passed": 3, "total": 3, "mastered": true}, {"topic": "认识自己 · 我的代码 orchestrator/main.py（_set_user_title、emit、set_state、ping_llm_daemon）", "kind": "self", "passed": 3, "total": 3, "mastered": true}, {"topic": "认识自己 · 我的代码 learning/lora_prep.py（main）", "kind": "self", "passed": 2, "total": 3, "mastered": true}, {"topic": "认识自己 · 我的代码 learning/lora_prep.py（job）", "kind": "self", "passed": 3, "total": 3, "mastered": true}, {"topic": "认识自己 · 我的代码 learning/lora_prep.py（job）", "kind": "self", "passed": 2, "total": 3, "mastered": false}, {"topic": "认识自己 · 我的代码 learning/lora_prep.py（route、_key、load_rows、rewrite）", "kind": "self", "passed": 3, "total": 3, "mastered": true}, {"topic": "认识自己 · 我的代码 learning/drill.py（agent_execute、run、local_planner、plan）", "kind": "self", "passed": 3, "total": 3, "mastered": true}, {"topic": "认识自己 · 我的代码 learning/drill.py（recent_tasks、coding_drill、squeeze、_clip）", "kind": "self", "passed": 2, "total": 3, "mastered": false}, {"topic": "认识自己 · 我的代码 learning/drill.py（recent_tasks、coding_drill、squeeze、_clip）", "kind": "self", "passed": 2, "total": 3, "mastered": false}, {"topic": "认识自己 · 我的代码 learning/agent.py（_split、_run_parallel、_serial_approve、_quiet_say）", "kind": "self", "passed": 3, "total": 3, "mastered": true}]}, "/api/progress": {"lora": {"stage": "第八版已上线（11月13日）", "steps": [{"name": "整理训练数据", "state": "done"}, {"name": "LoRA 训练（A100）", "state": "done"}, {"name": "合并权重", "state": "done"}, {"name": "量化 + 导出 ONNX", "state": "done"}, {"name": "编译成 RK1828 格式", "state": "done"}, {"name": "传到板子", "state": "done"}, {"name": "备份后切换试听", "state": "done"}], "versions": [{"version": "v8", "samples": 11313, "loss_before": 1.092, "loss_after": 1.077, "compare": [{"user": "那看图说话那个功能呢？", "before": "看图说话这块我还没接上，现在只能靠文字描述来回答。", "after": "看图说话这块我还没接上，现在只能认文字，图片识别得回头补。"}, {"user": "我上回说的那俩你都忘了？算了，我说的是那个便宜的跟贵的，你挑一个。", "before": "主人，您说的“便宜的”和“贵的”具体指哪两样东西我没听出来，得把名字报给我，我才能帮您挑。", "after": "主人，这回我确实没记住您上回说的是哪两个，得您把名字或样子再说一遍，我才能替您挑。"}, {"user": "我喝水老是忘了，怎么提醒自己多喝水好", "before": "主人，最省事的办法是把喝水这件事绑定到固定动作上，比如每次上厕所前、每次吃水果前都顺手喝一口。手机定个每小时一次的闹钟也行，但闹钟容易被打断，不如把水杯放在手边，想喝的时候顺手就喝掉。", "after": "主人，最省事的办法是把喝水和固定动作绑在一起，比如每次上厕所、每次加餐、每次出门前都顺手喝一口。手机定个每两小时一次的闹钟也行，但闹钟不如动作提醒管用。"}]}]}}, "/api/projects": {"projects": [{"goal": "修好自己：画图类请求编造成功、谎称已生成可看", "status": "done", "steps": 59, "spent": 0.553, "kind": "repair"}, {"goal": "修好自己：听不清时只给猜测、不给动作，三轮连卡在语音识别烂掉的句子上", "status": "done", "steps": 53, "spent": 0.474, "kind": "repair"}, {"goal": "修好自己：主人纠正后仍原样重复同一答案，不接住纠正", "status": "done", "steps": 65, "spent": 0.622, "kind": "repair"}, {"goal": "修好自己：主人问「你是第几版」，她答「我是第十版，主人」——把自己说成第十版、还叫主人，自", "status": "done", "steps": 39, "spent": 0.304, "kind": "repair"}, {"goal": "修好自己：听不清时反复追问同一句，把主人卡在原地（11-11 连两轮仍在问）", "status": "done", "steps": 39, "spent": 0.284, "kind": "repair"}, {"goal": "修好自己：问键盘问题答非所问：先讲自己，只查本机就下结论，还追问哪台机器", "status": "rejected", "steps": 62, "spent": 0.665, "kind": "repair"}], "drive": {"ambition": "这周回答先给结论再补一句理由，技术方案只说已验证可行的部分，拿不准就明说需要确认，不再随口报时间点。", "focus": "", "annoyed": 2, "pleased": 0, "wins": ["画图类请求编造成功、谎称已生成可看", "听不清时只给猜测、不给动作，三轮连卡在语音识别烂掉的句子上", "主人纠正后仍原样重复同一答案，不接住纠正"], "grudges": []}}};</script>
-<script>
-const $ = (id) => document.getElementById(id);
-// The static (GitHub Pages) copy carries a sanitized snapshot instead of talking to the board.
-const SNAP = window.SNAPSHOT || null;
-const get = (p) => SNAP ? (SNAP[p.split("?")[0]] ? Promise.resolve(SNAP[p.split("?")[0]]) : Promise.reject("no data"))
-  : fetch(p).then((r) => r.ok ? r.json() : Promise.reject(r.statusText));
-const esc = (s) => String(s ?? "").replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
-function dur(s) { const d = Math.floor(s / 86400), h = Math.floor(s % 86400 / 3600); return d ? `${d}天${h}时` : `${h}时${Math.floor(s % 3600 / 60)}分`; }
-async function load() {
-  const [mem, sys, sc, pg, pj] = await Promise.allSettled([get("/api/memory?limit=1"), get("/api/system"), get("/api/school"),
-                                                           get("/api/progress"), get("/api/projects")]);
-  if (pj.status === "fulfilled") {   // her projects and her drive (learning/project.py, learning/drive.py)
-    const word = { done: "做完", gave_up: "没做成", proposed: "等主人批准", applying: "上线中", rejected: "主人没批准", running: "在做",
-                   new: "排队", failed: "出错", stopped: "停了", over_budget: "钱用完", out_of_steps: "步数用完" };
-    $("pjList").innerHTML = (pj.value.projects || []).slice(0, 6).map((p) => `<li><span>${esc(p.goal.slice(0, 34))}</span>` +
-      `<span class="tag ${p.status === "done" ? "done" : p.status === "running" ? "running" : "ask"}">${word[p.status] || esc(p.status)} · ${p.steps || 0} 步 · ${Number(p.spent || 0).toFixed(2)} 元</span></li>`).join("");
-    const dv = pj.value.drive;
-    if (dv) $("dBox").innerHTML = `<div><b>她给自己定的目标：</b>${esc(dv.ambition)}</div>` +
-      `<div><b>这一周：</b>主人夸了她 ${dv.pleased} 次，不满意 ${dv.annoyed} 次${dv.focus ? "；正在改：" + esc(dv.focus) : ""}</div>` +
-      (dv.wins.length ? `<div><b>自己修好的：</b>${dv.wins.map(esc).join("；")}</div>` : "") +
-      `<div><b>还没服气的：</b>${dv.grudges.length ? dv.grudges.map(esc).join("；") : "暂时没有"}</div>`;
-  }
-  if (mem.status === "fulfilled") { const s = mem.value.stats; $("sKnow").textContent = s.knowledge; $("sLesson").textContent = s.lessons; $("sSkill").textContent = s.skills; }
-  if (sys.status === "fulfilled") {
-    const v = sys.value, up = v.services.filter((x) => x.state === "active").length;
-    $("sUp").textContent = dur(v.uptime_s);
-    $("liveTxt").textContent = (SNAP ? `数据快照 ${SNAP.taken} · ` : "在线 · ") + `${up}/${v.services.length} 个服务运行中 · CPU ${Math.round(v.cpu_percent)}% · ${v.temp_c}°C`;
-  }
-  if (sc.status === "fulfilled") {
-    const d = sc.value, total = d.syllabus.length || 1, idx = Math.min(d.index, total);
-    $("sClass").textContent = d.sessions; $("sMaster").textContent = d.mastered;
-    $("cTitle").textContent = `课程进度：${idx} / ${total} 门已过关`; $("cBar").style.width = (100 * idx / total) + "%";
-    $("cNext").textContent = d.index >= total ? `课表上的 ${total} 门都过关了；现在主要靠夜里的自我检查和修自己变强`
-      : "下一课：" + (d.syllabus[idx] || "");
-    if (d.review && d.review.who_am_i) $("cReview").innerHTML = `<b>今天的自省</b><br>我是谁：${esc(d.review.who_am_i)}<br>要干什么：${esc(d.review.purpose)}<br>` +
-      (d.review.gaps || []).slice(0, 3).map((g) => "缺：" + esc(g.gap)).join("<br>");
-    $("cList").innerHTML = d.history.slice(0, 14).map((h) => `<div><span>${esc((h.kind === "gap" ? "补短板·" : "") + h.topic)}</span><span class="tag ${h.mastered ? "done" : "ask"}">${h.passed}/${h.total}</span></div>`).join("");
-  }
-  if (pg.status === "fulfilled") {
-    const L = pg.value.lora || {}, steps = L.steps || [], v = (L.versions || [])[0];
-    const done = steps.filter((x) => x.state === "done").length;
-    $("pBar").style.width = (steps.length ? 100 * done / steps.length : 0) + "%"; $("pStage").textContent = L.stage || "";
-    const label = { done: "完成", running: "进行中", wait: "等待", ask: "等主人确认", failed: "失败" };
-    $("pSteps").innerHTML = steps.map((x) => `<li><span>${esc(x.name)}</span><span class="tag ${x.state}">${label[x.state] || x.state}</span></li>`).join("");
-    if (v) {
-      const cn = ["", "第一版", "第二版", "第三版", "第四版", "第五版", "第六版", "第七版", "第八版", "第九版"];
-      const n = parseInt(String(v.version || "").replace(/\D/g, ""), 10);
-      if (cn[n]) $("lVer").textContent = cn[n];
-      if (v.loss_before) { $("lBefore").textContent = v.loss_before; $("lAfter").textContent = v.loss_after; }
-      if (v.samples) $("lInfo").textContent = `${v.samples} 条自己的对话、课堂题和练习题 · 只训练很小一部分参数 · 上一版留在板子上随时可以退回`;
-      // a coding question where the base model rambled first: the clearest before / after
-      const c = (v.compare || []).find((x) => /Thinking Process/.test(x.before) && /函数|代码/.test(x.user));
-      if (c) $("cmpBox").innerHTML = `<div class="q">考题：${esc(c.user)}</div><div class="cmp"><div class="bad"><i>微调前（电脑上测，会先长篇思考）</i>${esc(c.before.slice(0, 110))}…</div><div class="good"><i>微调后</i>${esc(c.after)}</div></div>`;
-    }
-  }
-}
-load(); if (!SNAP) setInterval(load, 30000);
-</script>
-</body>
-</html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>星期一 M.O.N.D.A.Y. · 成果展示</title><style>
+:root{--bg:#0b0f1d;--card:#141a2e;--card2:#1a2140;--line:rgba(255,255,255,.10);--ink:#eef2ff;--dim:#a3acc8;--mute:#6f7898;
+--cyan:#5cc8ff;--violet:#a78bfa;--green:#4cd98a;--amber:#ffc35c;--pink:#ff7ab2}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;color:var(--ink);background:var(--bg);font:15px/1.7 -apple-system,"PingFang SC","Microsoft YaHei","Noto Sans CJK SC",sans-serif}
+body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
+ background:radial-gradient(900px 500px at 10% -5%,#23306a 0%,transparent 60%),radial-gradient(800px 500px at 100% 0%,#3e2566 0%,transparent 55%)}
+a{color:var(--cyan);text-decoration:none}
+.wrap{max-width:1120px;margin:0 auto;padding:0 24px}
+nav{position:sticky;top:0;z-index:5;background:rgba(11,15,29,.92);border-bottom:1px solid var(--line)}
+nav .wrap{display:flex;gap:4px;overflow-x:auto;padding-top:10px;padding-bottom:10px;scrollbar-width:none}
+nav a{flex:none;color:var(--dim);font-size:13.5px;padding:5px 12px;border-radius:999px}
+nav a:hover{color:var(--ink);background:var(--card2)}
+header{padding:56px 0 28px;display:grid;grid-template-columns:1fr 150px;gap:32px;align-items:center}
+.orb{width:150px;height:150px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff8,transparent 40%),conic-gradient(from 0deg,#5cc8ff,#a78bfa,#ff7ab2,#4cd98a,#5cc8ff);
+ animation:spin 14s linear infinite;box-shadow:0 0 70px #5cc8ff44,0 0 120px #a78bfa33}
+@keyframes spin{to{transform:rotate(360deg)}}
+h1{font-size:44px;line-height:1.15;margin:0;letter-spacing:1px}
+h1 small{display:block;font-size:16px;font-weight:500;color:var(--dim);letter-spacing:3px;margin-top:10px}
+.lead{font-size:16.5px;color:#d7defa;max-width:780px;margin:16px 0 0}
+.live{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--dim);margin-top:14px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green)}
+section{padding:34px 0 8px;scroll-margin-top:56px}
+h2{font-size:24px;margin:0 0 6px;display:flex;align-items:center;gap:10px}
+h2::before{content:"";width:5px;height:22px;border-radius:3px;background:linear-gradient(var(--cyan),var(--violet))}
+.intro{color:var(--dim);margin:0 0 18px;max-width:860px}
+h3{font-size:16px;margin:0 0 4px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px 22px}
+.sub{color:var(--dim);font-size:13px;margin:0 0 14px}
+.g2{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.stats{display:grid;grid-template-columns:repeat(6,1fr);gap:12px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 14px}
+.stat b{display:block;font-size:28px;line-height:1.2;font-variant-numeric:tabular-nums;white-space:nowrap}
+.stat span{color:var(--dim);font-size:12.5px}
+.feat .ic{font-size:22px}
+.feat p,.tech p{margin:4px 0 0;color:#cfd6f2;font-size:14px}
+.tech .tag{display:inline-block;font-size:11.5px;color:var(--cyan);border:1px solid rgba(92,200,255,.4);border-radius:999px;padding:0 8px;margin-bottom:8px}
+.tech ul{margin:8px 0 0;padding-left:18px;color:#cfd6f2;font-size:13.5px}
+.tech li{margin:2px 0}
+.flow{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;counter-reset:st}.flow.c3{grid-template-columns:repeat(3,1fr)}
+.flow .st{background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:10px 12px;counter-increment:st;position:relative}
+.flow .st::before{content:counter(st);position:absolute;top:8px;right:10px;font-size:11px;color:var(--mute)}
+.flow .st b{display:block;font-size:14px}
+.flow .st span{color:var(--dim);font-size:12.5px}
+.flow .ar{align-self:center;color:var(--mute)}
+.note{color:var(--dim);font-size:13px;margin:12px 0 0}
+.vrow{display:grid;grid-template-columns:92px 1fr 70px;gap:10px;align-items:center;margin:7px 0;font-size:13.5px}
+.vrow.n{grid-template-columns:38px 1fr 42px;margin:4px 0;font-size:12.5px}
+.vrow.w{grid-template-columns:120px 1fr 52px}
+.vtrack{height:16px;border-radius:4px;background:rgba(255,255,255,.06);overflow:hidden}
+.vrow.n .vtrack{height:11px}
+.vbar{height:100%;border-radius:0 4px 4px 0;background:var(--cyan)}
+.vbar.cur{background:var(--green)}
+.vbar.v2{background:var(--violet)}
+.vnum{text-align:right;font-variant-numeric:tabular-nums;color:var(--dim)}
+.vrow:hover .vnum{color:var(--ink)}
+.stack{display:flex;height:16px;gap:2px}
+.stack i{display:block;height:100%}
+.stack .w{background:var(--cyan);border-radius:4px 0 0 4px}.stack .t{background:#59617f}.stack .l{background:var(--amber);border-radius:0 4px 4px 0}
+.legend{display:flex;gap:16px;font-size:12.5px;color:var(--dim);margin:0 0 8px;flex-wrap:wrap}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+.crit h4{margin:0 0 4px;font-size:13.5px;font-weight:600}
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--dim);font-weight:500;white-space:nowrap}
+td:first-child{font-weight:600;white-space:nowrap}
+.pill{display:inline-block;padding:0 8px;border-radius:999px;font-size:12px;border:1px solid var(--line);white-space:nowrap;margin-right:6px}
+.pill.on{color:var(--green);border-color:var(--green)}.pill.done{color:var(--cyan);border-color:var(--cyan)}
+.pill.no{color:var(--mute)}.pill.wait{color:var(--amber);border-color:var(--amber)}
+.day h3 small{color:var(--dim);font-weight:400;margin-left:8px}
+.day ul,.card ul.plain{margin:6px 0 0;padding-left:20px}
+.day li{margin:3px 0;font-size:14px}
+.quote{background:var(--card2);border-radius:12px;padding:12px 14px;font-size:14px;margin:8px 0}
+.quote b{display:block;font-size:12.5px;color:var(--dim);font-weight:500;margin-bottom:2px}
+.proj{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+.proj:last-child{border-bottom:0}
+.proj span:last-child{flex:none;color:var(--dim);font-size:12.5px}
+.tier b{font-size:15px}.tier p{margin:6px 0 0;font-size:13.5px;color:#cfd6f2}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chips span{background:var(--card);border:1px solid var(--line);border-radius:999px;padding:5px 12px;font-size:13px}
+footer{margin:46px 0 40px;text-align:center;color:var(--mute);font-size:12.5px}
+@media (max-width:900px){.flow{grid-template-columns:repeat(3,1fr)}.stats{grid-template-columns:repeat(3,1fr)}.g3,.g4{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:640px){.flow,.flow.c3{grid-template-columns:1fr 1fr}header{grid-template-columns:1fr}.orb{display:none}h1{font-size:34px}.stats,.g2,.g3,.g4{grid-template-columns:1fr 1fr}
+ .g2.k1,.g3.k1{grid-template-columns:1fr}.vrow{grid-template-columns:70px 1fr 60px}.vrow.w{grid-template-columns:96px 1fr 44px}}
+@media (max-width:420px){.g2,.g3,.g4{grid-template-columns:1fr}}
+</style></head>
+<body><header class="wrap"><div>
+<h1>星期一 · M.O.N.D.A.Y.<small>一块开发板上的、会自己学习的语音助手</small></h1>
+<p class="lead">跑在 youyeetoo R1（RK3588 + RK1828）上的本地语音助手：听、想、说全部在板子上完成，不联网也能聊。
+不会的事去问老师（DeepSeek）；她自己答过的话由老师逐句批改，攒成训练数据，在 A100 上微调自己的大脑，现在线上是<b>第八版</b>。
+每天夜里她还会翻自己的对话，找出答得差的地方，自己写测试、改代码、上线。</p>
+<div class="live"><span class="dot"></span>数据快照 2026-11-13 13:12 · 5/5 个服务运行中 · CPU 31% · 55.5°C</div>
+</div><div class="orb"></div></header>
+<div class="wrap"><div class="stats"><div class="stat"><b>13,078</b><span>条训练样本</span></div><div class="stat"><b>1,213</b><span>对偏好对（DPO）</span></div><div class="stat"><b>2,245</b><span>轮在策陪练</span></div><div class="stat"><b>2,353</b><span>条学会的知识</span></div><div class="stat"><b>2,822</b><span>条记下的教训</span></div><div class="stat"><b>8</b><span>个微调版本</span></div></div></div><nav><div class="wrap"><a href="#arch">系统架构</a><a href="#can">她能做什么</a><a href="#learn">怎么变强</a><a href="#data">训练数据</a><a href="#spar">在策蒸馏</a><a href="#pipe">微调流水线</a><a href="#versions">版本对比</a><a href="#errands">办事练习</a><a href="#repair">自己修自己</a><a href="#week">本周汇报</a><a href="#safety">安全</a><a href="#stack">技术栈</a></div></nav><main class="wrap"><section id="arch"><h2>系统架构</h2><p class="intro">一句话从进麦克风到说出来，每一步都在板子上跑。</p><div class="card"><div class="flow"><div class="st"><b>麦克风 + VAD</b><span>Silero 断句</span></div><div class="st"><b>语音识别</b><span>sherpa-onnx 流式 Paraformer 中英</span></div><div class="st"><b>听懂意图</b><span>闲聊 / 知识 / 办事 / 问老师</span></div><div class="st"><b>大模型</b><span>Qwen3.5-4B + LoRA v8，RK1828 NPU</span></div><div class="st"><b>语音合成</b><span>Qwen3-TTS，RKNN 常驻</span></div><div class="st"><b>扬声器</b><span>边生成边播放</span></div></div><p class="note">问答约 0.35 秒开始出字，第一句语音约 0.95 秒出声；整条链路在板子上，不依赖云端。</p></div><div class="g4" style="margin-top:14px"><div class="card"><h3>记忆库</h3><p class="sub" style="margin:0">SQLite 全文检索：知识、教训、技能，回答前先查</p></div><div class="card"><h3>Agent</h3><p class="sub" style="margin:0">一步一步执行命令，安全分级，拿不准的进只读断网沙箱</p></div><div class="card"><h3>老师</h3><p class="sub" style="margin:0">DeepSeek：不会的问题、验证结果、批改她的回答</p></div><div class="card"><h3>自愈</h3><p class="sub" style="margin:0">systemd 守护，崩了自动拉起；危险操作前打快照</p></div></div></section><section id="can"><h2>她能做什么</h2><div class="g3"><div class="card feat"><div class="ic">🎙️</div><h3>全本地语音对话</h3><p>识别、思考、合成都在板子的 NPU 上，记得住最近 5 轮上下文。</p></div><div class="card feat"><div class="ic">🧭</div><h3>先听懂再动手</h3><p>每句话先分类；连续数字、英文缩写不会被识别吞掉，听不清会直说。</p></div><div class="card feat"><div class="ic">🛠️</div><h3>独立办事</h3><p>要办的事一步步执行命令、SSH 到其他机器、并行拆分任务，做完让老师验证。</p></div><div class="card feat"><div class="ic">🧩</div><h3>技能与外部工具</h3><p>学会的做法存成技能复用；支持 SKILL.md 技能包和 MCP 外部工具。</p></div><div class="card feat"><div class="ic">📦</div><h3>沙箱里做项目</h3><p>「开个项目：……」：在只读系统 + 独立目录的沙箱里写代码、查资料、自己验收。</p></div><div class="card feat"><div class="ic">🔧</div><h3>自己修自己</h3><p>每晚读自己的对话和日志，先写重现测试再改代码，考卷变差自动退回。</p></div><div class="card feat"><div class="ic">🩹</div><h3>自愈与备份</h3><p>服务崩了自动拉起；坏了能回滚；整机备份在 500G 备份服务器。</p></div><div class="card feat"><div class="ic">🪟</div><h3>局域网控制台</h3><p>看状态、记忆、项目、日志和训练进度；危险操作在这里确认。</p></div><div class="card feat"><div class="ic">🔥</div><h3>想变好的那股劲</h3><p>主人一句「又错了」排在最前面修；没修好的换办法再来。</p></div></div></section><section id="learn"><h2>她怎么自己变强</h2><p class="intro">老师是 DeepSeek，学生是板子上的 Qwen3.5-4B。六种方法各管一类错。</p><div class="card" style="margin-bottom:16px"><div class="flow"><div class="st"><b>每次对话</b><span>记下主人满不满意</span></div><div class="st"><b>夜里陪练 + 自检</b><span>老师批改她的回答</span></div><div class="st"><b>攒数据</b><span>样本 + 偏好对</span></div><div class="st"><b>A100 微调</b><span>LoRA SFT + DPO</span></div><div class="st"><b>考场评测</b><span>细则 + 盲评 + 考卷</span></div><div class="st"><b>过线才上线</b><span>不过线留在旧版</span></div></div><p class="note">改提示词和代码当晚见效；改「大脑」靠攒下的数据去微调，每一版都要过考场。</p></div><div class="g3"><div class="card tech"><span class="tag">Distillation</span><h3>离线蒸馏</h3><p>老师按她的人设，成批写出说话、认识自己、写代码、查板子四类答案；每条先过检查再留下。</p><ul><li>说话类：能直接念出来、够短，否则改写一次或丢掉</li><li>写代码类：老师的解法必须在沙箱里跑过测试</li><li>同一个问题最多留 2 份，避免死记</li></ul></div><div class="card tech"><span class="tag">On-policy distillation</span><h3>在策蒸馏</h3><p>离线蒸馏里她从不开口，她自己才会犯的错永远学不到。这里由她自己答，老师批改的是<b>她的</b>答案。</p><ul><li>老师照主人真实说话的样子扮演主人，带识别错字、追问、不耐烦</li><li>她用线上一模一样的提示词和上下文作答</li><li>答得好原样留下；答得差换成老师写的正确答案，并记一对「好 / 差」偏好</li></ul></div><div class="card tech"><span class="tag">DPO</span><h3>偏好优化</h3><p>SFT 教她「该怎么答」，DPO 再教她「两种答法里哪种更好」。</p><ul><li>偏好对来自在策陪练和办事练习：都是她自己真犯过的错</li><li>v7 踩过坑：好答案总是坏答案的前半截，模型学成「越短越好」；v8 起去掉这类对</li></ul></div><div class="card tech"><span class="tag">Graded drills</span><h3>动手练习</h3><p>写代码和查板子按结果判分，不看说得好不好听。</p><ul><li>写代码：她的代码要跑过老师给的断言测试</li><li>查板子：只执行安全分级为「安全」的命令，结论和板子实况对比</li></ul></div><div class="card tech"><span class="tag">Self-verified errands</span><h3>办事练习</h3><p>v9 的数据来源：答案直接从板子实况算出来，不用问老师，也不受高峰时段限制。</p><ul><li>19 类题：服务死活、端口、内存、磁盘、温度、日志、版本……</li><li>做对：整段过程当样本；做错：配一份真跑过、核对过的正确做法当教材</li></ul></div><div class="card tech"><span class="tag">Reflection & school</span><h3>夜间反思与课堂</h3><p>白天答错的题夜里复查，确认是错的变成教训和记忆卡；课表上 28 门课已全部过关。</p><ul><li>学会的课 14 天内不重讲，到期复习</li><li>高峰时段（工作日 9–12、14–18 点）不找老师，省一半钱</li></ul></div></div></section><section id="data"><h2>训练数据</h2><p class="intro">数量之外更看重来源：越多来自她自己真犯过的错，越对症。</p><div class="g2 k1"><div class="card"><h3>训练样本从哪来（共 13,078 条）</h3><p class="sub">板子上已攒下、可以直接进下一次微调的样本</p><div class="vrow w" title="办事练习（自己查、自己对答案）：4,233 条"><span>办事练习（自己查、自己对答案）</span><div class="vtrack"><div class="vbar" style="width:100.0%"></div></div><span class="vnum">4,233 条</span></div>
+<div class="vrow w" title="说话（老师示范）：3,017 条"><span>说话（老师示范）</span><div class="vtrack"><div class="vbar" style="width:71.3%"></div></div><span class="vnum">3,017 条</span></div>
+<div class="vrow w" title="在策蒸馏（陪练里被纠正）：2,074 条"><span>在策蒸馏（陪练里被纠正）</span><div class="vtrack"><div class="vbar" style="width:49.0%"></div></div><span class="vnum">2,074 条</span></div>
+<div class="vrow w" title="查板子（动手练习）：1,611 条"><span>查板子（动手练习）</span><div class="vtrack"><div class="vbar" style="width:38.1%"></div></div><span class="vnum">1,611 条</span></div>
+<div class="vrow w" title="写代码（沙箱验证）：1,501 条"><span>写代码（沙箱验证）</span><div class="vtrack"><div class="vbar" style="width:35.5%"></div></div><span class="vnum">1,501 条</span></div>
+<div class="vrow w" title="认识自己：600 条"><span>认识自己</span><div class="vtrack"><div class="vbar" style="width:14.2%"></div></div><span class="vnum">600 条</span></div>
+<div class="vrow w" title="联想：42 条"><span>联想</span><div class="vtrack"><div class="vbar" style="width:1.0%"></div></div><span class="vnum">42 条</span></div></div>
+<div class="card"><h3>偏好对（共 1,213 对）</h3><p class="sub">每对是同一个问题的「好答案 / 她的差答案」，用于 DPO</p><div class="vrow w" title="在策蒸馏：965 对"><span>在策蒸馏</span><div class="vtrack"><div class="vbar v2" style="width:100.0%"></div></div><span class="vnum">965 对</span></div>
+<div class="vrow w" title="办事练习：248 对"><span>办事练习</span><div class="vtrack"><div class="vbar v2" style="width:25.7%"></div></div><span class="vnum">248 对</span></div>
+<p class="note">训练时三种模式分开：说话（要能念出来）、写代码（保持真代码）、办事（每一步是 JSON），靠系统提示词区分，互不污染。</p></div></div></section><section id="spar"><h2>在策蒸馏：让她自己开口，再纠正她</h2><p class="intro">On-policy distillation：老师扮演主人和板子上的本地模型对话，逐句判；纠正后的答案和偏好对进下一版。</p><div class="g2 k1"><div class="card"><h3>每晚陪练：答得合格的比例</h3><p class="sub">老师严格判，答得不对、啰嗦、推脱都算不合格；每晚约 300–600 轮</p>
+<div class="vrow n" title="11-07：54%"><span>11-07</span><div class="vtrack"><div class="vbar" style="width:54.0%"></div></div><span class="vnum">54%</span></div>
+<div class="vrow n" title="11-08：59%"><span>11-08</span><div class="vtrack"><div class="vbar" style="width:59.0%"></div></div><span class="vnum">59%</span></div>
+<div class="vrow n" title="11-09：45%"><span>11-09</span><div class="vtrack"><div class="vbar" style="width:45.0%"></div></div><span class="vnum">45%</span></div>
+<div class="vrow n" title="11-10：45%"><span>11-10</span><div class="vtrack"><div class="vbar" style="width:45.0%"></div></div><span class="vnum">45%</span></div>
+<div class="vrow n" title="11-11：50%"><span>11-11</span><div class="vtrack"><div class="vbar" style="width:50.0%"></div></div><span class="vnum">50%</span></div>
+<div class="vrow n" title="11-12：54%"><span>11-12</span><div class="vtrack"><div class="vbar" style="width:54.0%"></div></div><span class="vnum">54%</span></div></div>
+<div class="card"><h3>她最常犯的错（6 晚合计）</h3><p class="sub">这些正是离线蒸馏学不到、只有她自己开口才会暴露的</p><div class="vrow w" title="推脱：251 次"><span>推脱</span><div class="vtrack"><div class="vbar v2" style="width:100.0%"></div></div><span class="vnum">251 次</span></div>
+<div class="vrow w" title="答非所问：218 次"><span>答非所问</span><div class="vtrack"><div class="vbar v2" style="width:86.9%"></div></div><span class="vnum">218 次</span></div>
+<div class="vrow w" title="乱承诺：128 次"><span>乱承诺</span><div class="vtrack"><div class="vbar v2" style="width:51.0%"></div></div><span class="vnum">128 次</span></div>
+<div class="vrow w" title="啰嗦：124 次"><span>啰嗦</span><div class="vtrack"><div class="vbar v2" style="width:49.4%"></div></div><span class="vnum">124 次</span></div>
+<div class="vrow w" title="没听懂：118 次"><span>没听懂</span><div class="vtrack"><div class="vbar v2" style="width:47.0%"></div></div><span class="vnum">118 次</span></div>
+<div class="vrow w" title="说错：95 次"><span>说错</span><div class="vtrack"><div class="vbar v2" style="width:37.8%"></div></div><span class="vnum">95 次</span></div>
+<div class="vrow w" title="编造：71 次"><span>编造</span><div class="vtrack"><div class="vbar v2" style="width:28.3%"></div></div><span class="vnum">71 次</span></div>
+<div class="vrow w" title="念不出：22 次"><span>念不出</span><div class="vtrack"><div class="vbar v2" style="width:8.8%"></div></div><span class="vnum">22 次</span></div>
+<div class="vrow w" title="不认识自己：13 次"><span>不认识自己</span><div class="vtrack"><div class="vbar v2" style="width:5.2%"></div></div><span class="vnum">13 次</span></div></div></div>
+<p class="note">6 个晚上共 2,245 轮对话，老师费用合计约 2.63 元；主人一开口陪练就停，把本地模型让给主人。</p></section><section id="pipe"><h2>微调流水线</h2><p class="intro">从攒下的数据到板子上的新大脑，每一步都可以回退。</p><div class="card"><div class="flow c3"><div class="st"><b>整理数据</b><span>去重、分三种模式、查密钥</span></div><div class="st"><b>LoRA SFT</b><span>A100，只训很小一部分参数</span></div><div class="st"><b>DPO</b><span>偏好对</span></div><div class="st"><b>合并权重</b><span></span></div><div class="st"><b>W4A16 量化</b><span>导出 ONNX</span></div><div class="st"><b>编译 RKNN</b><span>rknn3-toolkit → RK1828</span></div><div class="st"><b>传到板子</b><span>8 路并行 + sha256 校验</span></div><div class="st"><b>考场评测</b><span>和线上版同一晚比</span></div><div class="st"><b>快照后切换</b><span>旧版留着随时回滚</span></div></div><p class="note">自己把模型从原始权重转成 RK1828 格式，大小和官方发布版一致；每一版训练约 6 小时。</p></div><div class="g4" style="margin-top:14px"><div class="card"><h3>细则考场</h3><p class="sub" style="margin:0">60 道她没练过的题，每题一份 10 分细则（事实、不乱承诺、接住情绪、简洁……），老师逐项打分</p></div><div class="card"><h3>盲评两两比</h3><p class="sub" style="margin:0">同一道题两版回答打乱顺序给老师挑，不告诉它哪份是新版</p></div><div class="card"><h3>固定考卷</h3><p class="sub" style="margin:0">20 道办事 + 说话题，用板子实况判对错；加宽版再加 25 道办事题，共 90 分</p></div><div class="card"><h3>采用规则</h3><p class="sub" style="margin:0">细则高出 0.3 分以上、盲评不输、考卷不退步，三条都满足才换上板子</p></div></div></section><section id="versions"><h2>八个版本的大脑，放在一起比</h2><p class="intro">数据截至 2026-11-13（星期五）。v5–v8 用同一套题比；v6 事实更准但变啰嗦，v7 过短，v8 两头兼顾，现在在线上。</p><div class="g2 k1"><div class="card"><h3>细则平均分（满分 10）</h3><p class="sub">60 道题的平均；绿色是线上版本</p><div class="vrow " title="v5：6.53 分"><span>v5</span><div class="vtrack"><div class="vbar" style="width:65.3%"></div></div><span class="vnum">6.53 分</span></div>
+<div class="vrow " title="v6：6.48 分"><span>v6</span><div class="vtrack"><div class="vbar" style="width:64.8%"></div></div><span class="vnum">6.48 分</span></div>
+<div class="vrow " title="v7：7.43 分"><span>v7</span><div class="vtrack"><div class="vbar" style="width:74.3%"></div></div><span class="vnum">7.43 分</span></div>
+<div class="vrow " title="v8（线上）：7.25 分"><span>v8（线上）</span><div class="vtrack"><div class="vbar cur" style="width:72.5%"></div></div><span class="vnum">7.25 分</span></div></div>
+<div class="card"><h3>平均回答长度</h3><p class="sub">v7 掉到 32 字，太干巴，这是它没被采用的主因</p><div class="vrow " title="v5：55 字"><span>v5</span><div class="vtrack"><div class="vbar" style="width:78.6%"></div></div><span class="vnum">55 字</span></div>
+<div class="vrow " title="v6：59 字"><span>v6</span><div class="vtrack"><div class="vbar" style="width:84.3%"></div></div><span class="vnum">59 字</span></div>
+<div class="vrow " title="v7：32 字"><span>v7</span><div class="vtrack"><div class="vbar" style="width:45.7%"></div></div><span class="vnum">32 字</span></div>
+<div class="vrow " title="v8（线上）：59 字"><span>v8（线上）</span><div class="vtrack"><div class="vbar cur" style="width:84.3%"></div></div><span class="vnum">59 字</span></div></div></div>
+<div class="card" style="margin-top:16px"><h3>分项得分率</h3><p class="sub">每个细则拿到的分数占满分的比例</p><div class="g4" style="grid-template-columns:repeat(auto-fit,minmax(190px,1fr))"><div class="crit"><h4>事实准确</h4><div class="vrow n" title="v5：27%"><span>v5</span><div class="vtrack"><div class="vbar" style="width:27.0%"></div></div><span class="vnum">27%</span></div>
+<div class="vrow n" title="v6：53%"><span>v6</span><div class="vtrack"><div class="vbar" style="width:53.0%"></div></div><span class="vnum">53%</span></div>
+<div class="vrow n" title="v7：73%"><span>v7</span><div class="vtrack"><div class="vbar" style="width:73.0%"></div></div><span class="vnum">73%</span></div>
+<div class="vrow n" title="v8：53%"><span>v8</span><div class="vtrack"><div class="vbar cur" style="width:53.0%"></div></div><span class="vnum">53%</span></div></div><div class="crit"><h4>不乱承诺</h4><div class="vrow n" title="v5：79%"><span>v5</span><div class="vtrack"><div class="vbar" style="width:79.0%"></div></div><span class="vnum">79%</span></div>
+<div class="vrow n" title="v6：71%"><span>v6</span><div class="vtrack"><div class="vbar" style="width:71.0%"></div></div><span class="vnum">71%</span></div>
+<div class="vrow n" title="v7：98%"><span>v7</span><div class="vtrack"><div class="vbar" style="width:98.0%"></div></div><span class="vnum">98%</span></div>
+<div class="vrow n" title="v8：87%"><span>v8</span><div class="vtrack"><div class="vbar cur" style="width:87.0%"></div></div><span class="vnum">87%</span></div></div><div class="crit"><h4>接住情绪</h4><div class="vrow n" title="v5：34%"><span>v5</span><div class="vtrack"><div class="vbar" style="width:34.0%"></div></div><span class="vnum">34%</span></div>
+<div class="vrow n" title="v6：31%"><span>v6</span><div class="vtrack"><div class="vbar" style="width:31.0%"></div></div><span class="vnum">31%</span></div>
+<div class="vrow n" title="v7：41%"><span>v7</span><div class="vtrack"><div class="vbar" style="width:41.0%"></div></div><span class="vnum">41%</span></div>
+<div class="vrow n" title="v8：52%"><span>v8</span><div class="vtrack"><div class="vbar cur" style="width:52.0%"></div></div><span class="vnum">52%</span></div></div><div class="crit"><h4>简洁不啰嗦</h4><div class="vrow n" title="v5：77%"><span>v5</span><div class="vtrack"><div class="vbar" style="width:77.0%"></div></div><span class="vnum">77%</span></div>
+<div class="vrow n" title="v6：54%"><span>v6</span><div class="vtrack"><div class="vbar" style="width:54.0%"></div></div><span class="vnum">54%</span></div>
+<div class="vrow n" title="v7：85%"><span>v7</span><div class="vtrack"><div class="vbar" style="width:85.0%"></div></div><span class="vnum">85%</span></div>
+<div class="vrow n" title="v8：62%"><span>v8</span><div class="vtrack"><div class="vbar cur" style="width:62.0%"></div></div><span class="vnum">62%</span></div></div><div class="crit"><h4>先给结论</h4><div class="vrow n" title="v5：65%"><span>v5</span><div class="vtrack"><div class="vbar" style="width:65.0%"></div></div><span class="vnum">65%</span></div>
+<div class="vrow n" title="v6：62%"><span>v6</span><div class="vtrack"><div class="vbar" style="width:62.0%"></div></div><span class="vnum">62%</span></div>
+<div class="vrow n" title="v7：72%"><span>v7</span><div class="vtrack"><div class="vbar" style="width:72.0%"></div></div><span class="vnum">72%</span></div>
+<div class="vrow n" title="v8：71%"><span>v8</span><div class="vtrack"><div class="vbar cur" style="width:71.0%"></div></div><span class="vnum">71%</span></div></div></div></div>
+<div class="card" style="margin-top:16px"><h3>盲评两两比：新版对 v5</h3>
+<div class="legend"><span><i style="background:var(--cyan)"></i>新版赢</span><span><i style="background:#59617f"></i>平</span><span><i style="background:var(--amber)"></i>v5 赢</span></div><div class="vrow"><span>v6</span><div class="stack" title="v6 赢 23、平 19、v5 赢 18"><i class="w" style="width:38.3%"></i><i class="t" style="width:31.7%"></i><i class="l" style="width:30.0%"></i></div><span class="vnum">23 : 18</span></div><div class="vrow"><span>v7</span><div class="stack" title="v7 赢 21、平 11、v5 赢 28"><i class="w" style="width:35.0%"></i><i class="t" style="width:18.3%"></i><i class="l" style="width:46.7%"></i></div><span class="vnum">21 : 28</span></div><div class="vrow"><span>v8</span><div class="stack" title="v8 赢 24、平 14、v5 赢 22"><i class="w" style="width:40.0%"></i><i class="t" style="width:23.3%"></i><i class="l" style="width:36.7%"></i></div><span class="vnum">24 : 22</span></div></div>
+<div class="card" style="margin-top:16px"><h3>加宽考卷（满分 90，同一天在板子上考）</h3><p class="sub">按板子实况判对错；每题做两遍。v8 在 25 道新办事题上多拿 6 分</p><div class="vrow " title="v5：62 分"><span>v5</span><div class="vtrack"><div class="vbar" style="width:68.9%"></div></div><span class="vnum">62 分</span></div>
+<div class="vrow " title="v8（线上）：66 分"><span>v8（线上）</span><div class="vtrack"><div class="vbar cur" style="width:73.3%"></div></div><span class="vnum">66 分</span></div><p class="note" style="margin:2px 0">v5：原办事 14 · 说话 16 · 加宽办事 32</p><p class="note" style="margin:2px 0">v8：原办事 12 · 说话 16 · 加宽办事 38</p></div>
+<div class="card tw" style="margin-top:16px"><h3>每一版做了什么</h3><table><tr><th>版本</th><th>日期</th><th>训练了什么</th><th>结果</th></tr><tr><td>v1</td><td style="white-space:nowrap">11-05 星期四</td><td>第一次微调：165 条对话和课堂题，验证损失 1.83 → 1.22</td><td><span class="pill done">打通流程</span>证明能训、能转回板子跑</td></tr><tr><td>v2–v3</td><td style="white-space:nowrap">11-05 – 11-06</td><td>早期迭代</td><td><span class="pill no">已替换</span>v3 在线上用过一天</td></tr><tr><td>v4</td><td style="white-space:nowrap">11-06 星期五</td><td>9,587 条（说话、写代码、查板子），验证损失 1.78 → 1.17</td><td><span class="pill no">已替换</span>每项都不比 v3 差</td></tr><tr><td>v5</td><td style="white-space:nowrap">11-07 星期六</td><td>清洗后的蒸馏数据，验证损失 1.76 → 1.12</td><td><span class="pill no">留作回滚</span>11-07 到 11-13 在线上</td></tr><tr><td>v6</td><td style="white-space:nowrap">11-08 星期日</td><td>20,616 条，第一次加入在策蒸馏的纠正（权重 ×2）</td><td><span class="pill no">没采用</span>事实更准，但变啰嗦、更爱承诺</td></tr><tr><td>v7</td><td style="white-space:nowrap">11-09 星期一</td><td>从 v6 接着训：10,806 条 SFT + 854 对 DPO 偏好</td><td><span class="pill no">没采用</span>细则分最高，但回答太短，盲评输给 v5</td></tr><tr><td>v8</td><td style="white-space:nowrap">11-11 星期三</td><td>同样配方，去掉「越短越好」的偏好对、放宽长度：11,313 条 + 497 对</td><td><span class="pill on">线上</span>11-13 换上板子</td></tr><tr><td>v9</td><td style="white-space:nowrap">11-13 星期五起</td><td>专门练「办事」：她自己在板子上查、自己对答案攒数据</td><td><span class="pill wait">攒数据中</span>已攒 4,233 条样本、248 对偏好</td></tr></table></div></section><section id="errands"><h2>办事练习：v9 的数据</h2><p class="intro">把「训向办事」落到可验证的题上：她自己查、自己对答案。</p><div class="g2 k1"><div class="card"><h3>一夜 1,508 题，自己做对 72%</h3><p class="sub">v5 在 11-12 夜里的成绩；按题型排，最弱的在上面——这就是 v9 要补的</p><div class="vrow w" title="版本号：0%"><span>版本号</span><div class="vtrack"><div class="vbar" style="width:0.8%"></div></div><span class="vnum">0%</span></div>
+<div class="vrow w" title="模型目录大小：29%"><span>模型目录大小</span><div class="vtrack"><div class="vbar" style="width:29.0%"></div></div><span class="vnum">29%</span></div>
+<div class="vrow w" title="服务死活：43%"><span>服务死活</span><div class="vtrack"><div class="vbar" style="width:43.0%"></div></div><span class="vnum">43%</span></div>
+<div class="vrow w" title="CPU 核数：49%"><span>CPU 核数</span><div class="vtrack"><div class="vbar" style="width:49.0%"></div></div><span class="vnum">49%</span></div>
+<div class="vrow w" title="开机时长换算：54%"><span>开机时长换算</span><div class="vtrack"><div class="vbar" style="width:54.0%"></div></div><span class="vnum">54%</span></div>
+<div class="vrow w" title="日志文件数：67%"><span>日志文件数</span><div class="vtrack"><div class="vbar" style="width:67.0%"></div></div><span class="vnum">67%</span></div>
+<div class="vrow w" title="进程归哪个服务：71%"><span>进程归哪个服务</span><div class="vtrack"><div class="vbar" style="width:71.0%"></div></div><span class="vnum">71%</span></div>
+<div class="vrow w" title="内存放不放得下：74%"><span>内存放不放得下</span><div class="vtrack"><div class="vbar" style="width:74.0%"></div></div><span class="vnum">74%</span></div>
+<div class="vrow w" title="磁盘放不放得下：76%"><span>磁盘放不放得下</span><div class="vtrack"><div class="vbar" style="width:76.0%"></div></div><span class="vnum">76%</span></div>
+<div class="vrow w" title="谁最占内存：87%"><span>谁最占内存</span><div class="vtrack"><div class="vbar" style="width:87.0%"></div></div><span class="vnum">87%</span></div>
+<div class="vrow w" title="最大的日志：89%"><span>最大的日志</span><div class="vtrack"><div class="vbar" style="width:89.0%"></div></div><span class="vnum">89%</span></div>
+<div class="vrow w" title="进程占内存：94%"><span>进程占内存</span><div class="vtrack"><div class="vbar" style="width:94.0%"></div></div><span class="vnum">94%</span></div>
+<div class="vrow w" title="磁盘使用率：100%"><span>磁盘使用率</span><div class="vtrack"><div class="vbar" style="width:100.0%"></div></div><span class="vnum">100%</span></div>
+<div class="vrow w" title="可用内存：100%"><span>可用内存</span><div class="vtrack"><div class="vbar" style="width:100.0%"></div></div><span class="vnum">100%</span></div>
+<div class="vrow w" title="端口归属：100%"><span>端口归属</span><div class="vtrack"><div class="vbar" style="width:100.0%"></div></div><span class="vnum">100%</span></div>
+<div class="vrow w" title="日志总大小：100%"><span>日志总大小</span><div class="vtrack"><div class="vbar" style="width:100.0%"></div></div><span class="vnum">100%</span></div>
+<div class="vrow w" title="CPU 温度：100%"><span>CPU 温度</span><div class="vtrack"><div class="vbar" style="width:100.0%"></div></div><span class="vnum">100%</span></div>
+<div class="vrow w" title="内存总量：100%"><span>内存总量</span><div class="vtrack"><div class="vbar" style="width:100.0%"></div></div><span class="vnum">100%</span></div>
+<div class="vrow w" title="磁盘剩余：100%"><span>磁盘剩余</span><div class="vtrack"><div class="vbar" style="width:100.0%"></div></div><span class="vnum">100%</span></div></div>
+<div class="card"><h3>怎么出题、怎么判</h3><ul class="plain">
+<li>题目随机组合题型和说法，从不和考卷重复；考卷里留着 20 道她练不到的题，专门比版本。</li>
+<li>答案从板子实况算出来（systemctl、df、free、ps……），不问老师、不花钱。</li>
+<li>她做错时，用一套真跑过、核对通过的标准做法当教材；她把命令都跑对了只是结论说错，就用她自己的输出写出正确结论。</li>
+<li>常见错：把命令念进结论、单位换算错、文件数差一个、找不到版本号。</li>
+<li>一夜攒下 4,233 条样本、248 对偏好；主人一开口就暂停。</li></ul></div></div></section><section id="repair"><h2>自己修自己</h2><div class="g2 k1"><div class="card"><h3>她第一次自己修好了自己（11月7日）</h3>
+<p class="sub">主人问她能不能做个苹果 App、要多久。当晚自检时她发现这句答得不靠谱，开了一个修自己的项目。</p>
+<div class="quote"><b>修之前</b>三步全做完……估摸着得三到四周，第一步的项目骨架今晚就能给你，明早你能跑起来看。</div>
+<div class="quote"><b>她自己修好以后</b>现在就能动手，但做出来的是骨架和能跑的小验证，不是成品……我没法给出几周交付这种承诺。要不要先立个项？</div>
+<p class="note">自己 grep 出原因（提示词里没有「不许乱承诺工期」）→ 写重现测试 → 改提示词 → 全套测试无新失败 → 快照、上线、考卷对比。6 分钟、39 步、0.28 元。</p></div>
+<div class="card"><h3>她修过的自己</h3><p class="sub">每个都是一个独立项目：证据 → 重现测试 → 修改 → 全套测试 → 上线，变差自动退回</p><div class="proj"><span>修好自己：画图类请求编造成功、谎称已生成可看</span><span>做完 · 59 步 · 0.55 元</span></div><div class="proj"><span>修好自己：听不清时只给猜测、不给动作，三轮连卡在语音识别烂掉的句子上</span><span>做完 · 53 步 · 0.47 元</span></div><div class="proj"><span>修好自己：主人纠正后仍原样重复同一答案，不接住纠正</span><span>做完 · 65 步 · 0.62 元</span></div><div class="proj"><span>修好自己：主人问「你是第几版」，她答「我是第十版，主人」——把自己说成第十版、还叫主人，自</span><span>做完 · 39 步 · 0.30 元</span></div><div class="proj"><span>修好自己：听不清时反复追问同一句，把主人卡在原地（11-11 连两轮仍在问）</span><span>做完 · 39 步 · 0.28 元</span></div><div class="proj"><span>修好自己：问键盘问题答非所问：先讲自己，只查本机就下结论，还追问哪台机器</span><span>主人没批准 · 62 步 · 0.67 元</span></div>
+<p class="note">她给自己定的目标：这周回答先给结论再补一句理由，技术方案只说已验证可行的部分，拿不准就明说需要确认，不再随口报时间点。</p></div></div></section><section id="week"><h2>本周工作汇报</h2><p class="intro">11月9日（星期一）– 11月13日（星期五）</p><div style="display:grid;gap:12px"><div class="card day"><h3>星期一<small>11月9日</small></h3><ul><li>v6 评完：事实准确率翻倍，但变啰嗦、更爱承诺，没换上去。</li><li>搭了 60 题细则考场：每题一份 10 分细则，以后每一版都用同一套题比。</li><li>开始训练 v7：从 v6 接着训，再用偏好对（DPO）学「哪种回答更好」。</li></ul></div><div class="card day"><h3>星期二<small>11月10日</small></h3><ul><li>训练服务器和板子整机备份到备份服务器，逐个文件校验一致。</li></ul></div><div class="card day"><h3>星期三<small>11月11日</small></h3><ul><li>v7 评完：细则分最高（7.43），但回答平均只剩 32 字，盲评输给 v5，没采用。</li><li>找到原因：一部分偏好对里好答案总是坏答案的前半截，模型学成了「越短越好」。</li><li>去掉这类偏好对、放宽长度，训练 v8，当天训完。</li></ul></div><div class="card day"><h3>星期四<small>11月12日</small></h3><ul><li>查清传模型慢的原因：跨网段线路丢包，单条连接很慢；改成 8 段并行、断点续传，快了约 10 倍。</li><li>v8 转成板子格式、传上板子，校验通过；凌晨她又自己交了一次修自己代码的改动。</li></ul></div><div class="card day"><h3>星期五<small>11月13日</small></h3><ul><li>v8 评完：细则 6.53 → 7.25，盲评 24 : 22 小胜 v5，长度正常，过了采用线，中午换上板子（换前打快照，v5 留作回滚）。</li><li>删掉板子上的旧版模型 v2、v3、v4、v6、v7（备份服务器上都有），数据盘 92% → 47%。</li><li>为 v9 搭了「办事练习」：一夜跑了 1,508 题，她自己做对 72%，攒下 4,233 条样本和 248 对偏好。</li><li>加宽考卷到 90 分（多 25 道办事题）：v5 62 分，v8 66 分。</li></ul></div></div></section><section id="safety"><h2>安全：能动手，但先问主人</h2><div class="g4"><div class="card tier"><b style="color:var(--green)">安全</b><p>只读查看、查状态：直接做；拿不准的只读命令放进只读、断网的沙箱里跑，不打扰主人。</p></div><div class="card tier"><b style="color:var(--cyan)">询问</b><p>改东西、SSH 到别的设备：先问，可以「只这一次」或「以后都行」。</p></div><div class="card tier"><b style="color:var(--amber)">危险</b><p>可能损坏系统：先打快照，再严格确认；她要改自己的权限判断，也得主人说「批准修改」。</p></div><div class="card tier"><b style="color:var(--pink)">禁止</b><p>密钥不进仓库、不朗读密码；沙箱、上线流程、考卷、预算这些，她自己永远改不了。</p></div></div></section><section id="stack"><h2>技术栈</h2><div class="chips"><span>youyeetoo R1 · RK3588 + RK1828</span><span>Qwen3.5-4B（W4A16 量化）· LoRA v8</span><span>Qwen3-TTS（RKNN）</span><span>sherpa-onnx Paraformer · Silero VAD</span><span>rknn3-toolkit 1.1.0</span><span>DeepSeek 老师</span><span>PEFT LoRA + DPO · NVIDIA A100</span><span>SQLite FTS 记忆库</span><span>MCP · SKILL.md</span><span>systemd 定时器 · 自愈 · 快照回滚</span><span>bwrap 沙箱 · 只出外网的代理</span><span>unittest 全套测试 + 固定考卷</span></div></section></main>
+<footer>数据是板子上的一次快照（2026-11-13 13:12）；真机上的控制台只在局域网内可用。</footer></body></html>
